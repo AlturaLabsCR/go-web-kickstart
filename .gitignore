@@ -1,0 +1,4 @@
+internal/
+*_templ.go
+db.db
+app

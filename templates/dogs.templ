@@ -1,0 +1,11 @@
+package templates
+
+import "app/internal/db"
+
+templ Dogs(dogs []db.Dog) {
+	for _, dog := range dogs {
+		<div>
+			{ dog.DogName }
+		</div>
+	}
+}
