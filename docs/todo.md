@@ -1,6 +1,6 @@
 # ToDo
 
-- [ ] sqlc live reload as well
+- [X] sqlc live reload as well
 - [ ] env variables also affect make directives
 - [ ] scripts/ folder with support for downloading static dependencies such as fonts
 - [ ] example frontend library, probably datastar
