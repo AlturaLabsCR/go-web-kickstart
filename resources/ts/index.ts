@@ -1,1 +1,1 @@
-console.log("Hello, world!");
+console.log("Hello from resources/ts/index.ts");

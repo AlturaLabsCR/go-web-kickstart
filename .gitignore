@@ -3,3 +3,6 @@ internal/
 db.db
 app
 node_modules
+assets/**/*.js
+assets/**/*.css
+tmp/

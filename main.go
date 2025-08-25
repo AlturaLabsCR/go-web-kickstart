@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"net/http"
 	"os"
 	"os/signal"
@@ -8,12 +9,16 @@ import (
 
 	"app/config"
 	"app/handlers"
+	"app/middleware"
 	"app/router"
 )
 
 const (
 	defaultPort = "8080"
 )
+
+//go:embed assets/*
+var assetsFS embed.FS
 
 func main() {
 	var (
@@ -47,6 +52,14 @@ func main() {
 	})
 
 	routes := router.Routes(handler)
+
+	routes.Handle(
+		"GET /assets/",
+		middleware.DisableCacheInDevMode(
+			production,
+			http.FileServer(http.FS(assetsFS)),
+		),
+	)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
