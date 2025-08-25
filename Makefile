@@ -7,6 +7,15 @@ deps:
 	go mod tidy
 	npm install
 
+live/sql:
+	go run github.com/air-verse/air@v1.62.0 \
+	--build.cmd "go tool github.com/sqlc-dev/sqlc/cmd/sqlc generate" \
+	--build.bin "/bin/true" \
+	--build.delay "100" \
+	--build.exclude_dir "" \
+	--build.include_dir "database" \
+	--build.include_ext "sql"
+
 # run templ generation in watch mode to detect all .templ files and
 # re-create _templ.txt files on change, then send reload event to browser.
 # Default url: http://localhost:7331
@@ -33,7 +42,7 @@ live/esbuild:
 # watch for any js or css change in the assets/ folder, then reload the browser via templ proxy.
 live/sync_assets:
 	go run github.com/air-verse/air@v1.62.0 \
-	--build.cmd "templ generate --notify-proxy" \
+	--build.cmd "go tool github.com/a-h/templ/cmd/templ generate --notify-proxy" \
 	--build.bin "/bin/true" \
 	--build.delay "100" \
 	--build.exclude_dir "" \
@@ -42,9 +51,9 @@ live/sync_assets:
 
 # start all 5 watch processes in parallel.
 live: deps
-	make -j5 live/templ live/server live/tailwind live/esbuild live/sync_assets
+	make -j6 live/sql live/templ live/server live/tailwind live/esbuild live/sync_assets
 
-build/sql:
+build/sql: database/schema.sql database/queries.sql
 	go tool github.com/sqlc-dev/sqlc/cmd/sqlc generate
 
 build/templ:
