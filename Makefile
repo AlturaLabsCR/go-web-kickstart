@@ -4,7 +4,6 @@
 all: build
 
 deps:
-	go mod tidy
 	npm install
 
 live/sql:
