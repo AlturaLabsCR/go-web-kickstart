@@ -6,10 +6,7 @@ It also includes example tailwindcss and esbuild usage.
 ## Build
 
 ```sh
-go mod tidy
-go tool github.com/a-h/templ/cmd/templ generate
-go tool github.com/sqlc-dev/sqlc/cmd/sqlc generate
-go build
+make build
 ```
 
 ## Live reload

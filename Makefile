@@ -1,11 +1,17 @@
 # See:
 # https://templ.guide/developer-tools/live-reload-with-other-tools
 
+all: build
+
+deps:
+	go mod tidy
+	npm install
+
 # run templ generation in watch mode to detect all .templ files and
 # re-create _templ.txt files on change, then send reload event to browser.
 # Default url: http://localhost:7331
 live/templ:
-	templ generate --watch --proxy="http://localhost:8080" --open-browser=false -v
+	go tool github.com/a-h/templ/cmd/templ generate --watch --proxy="http://localhost:8080" --open-browser=false -v
 
 # run air to detect any go file changes to re-build and re-run the server.
 live/server:
@@ -35,5 +41,30 @@ live/sync_assets:
 	--build.include_ext "js,css"
 
 # start all 5 watch processes in parallel.
-live:
+live: deps
 	make -j5 live/templ live/server live/tailwind live/esbuild live/sync_assets
+
+build/sql:
+	go tool github.com/sqlc-dev/sqlc/cmd/sqlc generate
+
+build/templ:
+	go tool github.com/a-h/templ/cmd/templ generate -v
+
+build/tailwind:
+	npx --yes @tailwindcss/cli -i ./resources/css/tailwind.css -o ./assets/css/styles.css
+
+build/esbuild:
+	npx --yes esbuild ./resources/ts/index.ts --bundle --outdir=assets/js
+
+build: deps
+	make -j4 build/sql build/templ build/tailwind build/esbuild
+	CGO_ENABLED=0 go build
+
+run: build
+	go run .
+
+dist: build scripts/release.sh
+	./scripts/release.sh
+
+clean:
+	rm -rf node_modules tmp app dist
