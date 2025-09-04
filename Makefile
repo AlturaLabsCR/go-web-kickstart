@@ -1,6 +1,4 @@
-# See:
-# https://templ.guide/developer-tools/live-reload-with-other-tools
-
+# Replace with your output binary name
 BIN = app
 
 LOGFILE = build.log
@@ -138,6 +136,8 @@ live/sync_assets:
 	--build.include_ext "js,css" \
 	--log.main_only "true" $(LIVELOG)
 
+# See:
+# https://templ.guide/developer-tools/live-reload-with-other-tools
 live:
 	@printf "\033[1m%s\033[0m\n" "Logs are saved into $(LIVELOGFILE)"
 	$(MAKE) -j6 live/sql live/templ live/server live/esbuild live/sync_assets live/tailwind
