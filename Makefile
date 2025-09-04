@@ -3,10 +3,14 @@
 
 BIN = app
 
-LOG = >> build.log 2>&1
-LIVELOG = >> live.log 2>&1
-SQLC = go tool github.com/sqlc-dev/sqlc/cmd/sqlc
-TEMPL = go tool github.com/a-h/templ/cmd/templ
+LOGFILE = build.log
+LOG = >> $(LOGFILE) 2>&1
+LIVELOGFILE = live.log
+LIVELOG = >> $(LIVELOGFILE) 2>&1
+
+GO = go
+SQLC = $(GO) tool github.com/sqlc-dev/sqlc/cmd/sqlc
+TEMPL = $(GO) tool github.com/a-h/templ/cmd/templ
 
 .PHONY: all
 all: build
@@ -74,26 +78,23 @@ prep:
 
 .PHONY: build
 build: prep
-	CGO_ENABLED=0 go build
+	@printf "\033[1m%s\033[0m\n" "Logs are saved into $(LOGFILE)"
+	CGO_ENABLED=0 $(GO) build
 
 .PHONY: clean/build
 clean/build:
-	rm -rf $(BIN) make.log
+	rm -rf $(BIN) $(LOGFILE)
 
 .PHONY: run
 run: prep
-	go run .
-
-.PHONY: clean
-clean:
-	$(MAKE) -j6 clean/assets/js clean/assets/css clean/node_modules clean/sql clean/templates clean/build
+	$(GO) run .
 
 # dist: build scripts/release.sh
 # 	./scripts/release.sh
 
 live/sql:
-	@go run github.com/air-verse/air@v1.62.0 \
-	--build.cmd "go tool github.com/sqlc-dev/sqlc/cmd/sqlc generate" \
+	@$(GO) run github.com/air-verse/air@v1.62.0 \
+	--build.cmd "$(GO) tool github.com/sqlc-dev/sqlc/cmd/sqlc generate" \
 	--build.bin "/bin/true" \
 	--build.delay "100" \
 	--build.exclude_dir "" \
@@ -103,11 +104,11 @@ live/sql:
 
 live/templ:
 	@printf "\033[1mstarting templ proxy, url: \033[0m\033[32m%s\033[0m\n" "http://localhost:7331"
-	@go tool github.com/a-h/templ/cmd/templ generate --watch --proxy="http://localhost:8080" --open-browser=false --log-level="warn" $(LIVELOG)
+	@$(GO) tool github.com/a-h/templ/cmd/templ generate --watch --proxy="http://localhost:8080" --open-browser=false --log-level="warn" $(LIVELOG)
 
 live/server:
-	@go run github.com/air-verse/air@v1.62.0 \
-	--build.cmd "go build -o tmp/bin/main" --build.bin "tmp/bin/main" --build.delay "100" \
+	@$(GO) run github.com/air-verse/air@v1.62.0 \
+	--build.cmd "$(GO) build -o tmp/bin/main" --build.bin "tmp/bin/main" --build.delay "100" \
 	--build.exclude_dir "node_modules" \
 	--build.include_ext "go,js,css" \
 	--build.stop_on_error "false" \
@@ -115,7 +116,7 @@ live/server:
 	--log.main_only "true" $(LIVELOG)
 
 live/tailwind: node_modules
-	@go run github.com/air-verse/air@v1.62.0 \
+	@$(GO) run github.com/air-verse/air@v1.62.0 \
 	--build.cmd "npx --yes @tailwindcss/cli -i ./resources/css/tailwind.css -o ./assets/css/styles.css" \
 	--build.bin "/bin/true" \
 	--build.delay "100" \
@@ -128,8 +129,8 @@ live/esbuild: node_modules
 	@npx --yes esbuild ./resources/ts/index.ts --bundle --outdir=assets/js --watch=forever $(LIVELOG)
 
 live/sync_assets:
-	@go run github.com/air-verse/air@v1.62.0 \
-	--build.cmd "go tool github.com/a-h/templ/cmd/templ generate --notify-proxy" \
+	@$(GO) run github.com/air-verse/air@v1.62.0 \
+	--build.cmd "$(GO) tool github.com/a-h/templ/cmd/templ generate --notify-proxy" \
 	--build.bin "/bin/true" \
 	--build.delay "100" \
 	--build.exclude_dir "" \
@@ -138,4 +139,13 @@ live/sync_assets:
 	--log.main_only "true" $(LIVELOG)
 
 live:
+	@printf "\033[1m%s\033[0m\n" "Logs are saved into $(LIVELOGFILE)"
 	$(MAKE) -j6 live/sql live/templ live/server live/esbuild live/sync_assets live/tailwind
+
+.PHONY: clean/live
+clean/live:
+	rm -rf $(LIVELOGFILE)
+
+.PHONY: clean
+clean:
+	$(MAKE) -j7 clean/assets/js clean/assets/css clean/node_modules clean/sql clean/templates clean/build clean/live
