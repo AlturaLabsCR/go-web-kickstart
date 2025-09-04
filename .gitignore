@@ -7,3 +7,4 @@ assets/**/*.js
 assets/**/*.css
 tmp/
 dist/
+*.log
