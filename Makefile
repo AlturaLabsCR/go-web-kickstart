@@ -9,6 +9,9 @@ GO_ENV = CGO_ENABLED=0
 SQLC = $(GO) tool github.com/sqlc-dev/sqlc/cmd/sqlc
 TEMPL = $(GO) tool github.com/a-h/templ/cmd/templ
 
+NPM = npm
+NPX = npx
+
 LOGFILE = build.log
 LOG = >> $(LOGFILE) 2>&1
 LIVELOGFILE = live.log
@@ -42,7 +45,7 @@ clean/templates:
 	rm -rf $(TEMPLATES_GEN)
 
 node_modules: package.json package-lock.json
-	npm install $(LOG)
+	$(NPM) ci $(LOG)
 
 .PHONY: clean/node_modules
 clean/node_modules:
@@ -53,7 +56,7 @@ ESBUILD_OUT := $(addsuffix .js,$(basename $(patsubst resources/ts/%,assets/js/%,
 GEN += $(ESBUILD_OUT)
 $(ESBUILD_OUT) &: $(ESBUILD_IN) node_modules
 	@mkdir -p assets/js
-	npx --yes esbuild $(ESBUILD_IN) --bundle --outdir=assets/js $(LOG)
+	$(NPX) --yes esbuild $(ESBUILD_IN) --bundle --outdir=assets/js $(LOG)
 	@touch $@
 
 .PHONY: clean/assets/js
@@ -62,7 +65,7 @@ clean/assets/js:
 
 GEN += assets/css/styles.css
 assets/css/styles.css: resources/css/tailwind.css $(TEMPLATES) node_modules
-	npx --yes @tailwindcss/cli -i ./resources/css/tailwind.css -o ./$@ $(LOG)
+	$(NPX) --yes @tailwindcss/cli -i ./resources/css/tailwind.css -o ./$@ $(LOG)
 	@touch $@
 
 .PHONY: clean/assets/css
@@ -118,7 +121,7 @@ live/server: $(GEN)
 
 live/tailwind: node_modules
 	@$(GO) run github.com/air-verse/air@v1.62.0 \
-	--build.cmd "npx --yes @tailwindcss/cli -i ./resources/css/tailwind.css -o ./assets/css/styles.css" \
+	--build.cmd "$(NPX) --yes @tailwindcss/cli -i ./resources/css/tailwind.css -o ./assets/css/styles.css" \
 	--build.bin "/bin/true" \
 	--build.delay "100" \
 	--build.exclude_dir "" \
@@ -127,7 +130,7 @@ live/tailwind: node_modules
 	--log.main_only "true" $(LIVELOG)
 
 live/esbuild: node_modules
-	@npx --yes esbuild ./resources/ts/index.ts --bundle --outdir=assets/js --watch=forever $(LIVELOG)
+	@$(NPX) --yes esbuild ./resources/ts/index.ts --bundle --outdir=assets/js --watch=forever $(LIVELOG)
 
 live/sync_assets: assets
 	@$(GO) run github.com/air-verse/air@v1.62.0 \
