@@ -73,6 +73,9 @@ clean/assets/css:
 clean/assets:
 	rm -rf $(GEN)
 
+.PHONY: gen
+gen: $(GEN)
+
 $(BIN): $(GEN)
 	$(GO_ENV) $(GO) build $(LOG)
 
@@ -142,8 +145,8 @@ live/log-notice:
 
 # See:
 # https://templ.guide/developer-tools/live-reload-with-other-tools
-live: live/log-notice
-	@$(MAKE) -j6 live/sql live/templ live/server live/esbuild live/sync_assets live/tailwind
+live: live/log-notice gen
+	@$(MAKE) -j live/sql live/templ live/server live/esbuild live/sync_assets live/tailwind
 
 .PHONY: clean/live
 clean/live:
@@ -180,4 +183,4 @@ clean/dist:
 
 .PHONY: clean
 clean:
-	$(MAKE) -j7 clean/assets/js clean/assets/css clean/node_modules clean/sql clean/templates clean/build clean/live clean/dist
+	$(MAKE) -j clean/assets/js clean/assets/css clean/node_modules clean/sql clean/templates clean/build clean/live clean/dist
