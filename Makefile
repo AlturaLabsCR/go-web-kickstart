@@ -28,7 +28,7 @@ sql: internal/db
 TEMPLATES := $(wildcard templates/*.templ)
 TEMPLATES_GEN := $(TEMPLATES:.templ=_templ.go)
 $(TEMPLATES_GEN) &: $(TEMPLATES)
-	$(TEMPL) generate -v >> make.log 2>&1
+	$(TEMPL) generate -v $(LOG)
 	@touch $@
 
 .PHONY: templates
@@ -39,7 +39,7 @@ clean/templates:
 	rm -rf $(TEMPLATES_GEN)
 
 node_modules: package.json package-lock.json
-	npm install >> make.log 2>&1
+	npm install $(LOG)
 
 .PHONY: clean/node_modules
 clean/node_modules:
@@ -49,7 +49,7 @@ ESBUILD_IN := $(wildcard resources/ts/*.ts) $(wildcard resources/ts/*.js)
 ESBUILD_OUT := $(addsuffix .js,$(basename $(patsubst resources/ts/%,assets/js/%,$(ESBUILD_IN))))
 $(ESBUILD_OUT) &: $(ESBUILD_IN) node_modules
 	@mkdir -p assets/js
-	npx --yes esbuild $(ESBUILD_IN) --bundle --outdir=assets/js >> make.log 2>&1
+	npx --yes esbuild $(ESBUILD_IN) --bundle --outdir=assets/js $(LOG)
 	@touch $@
 
 .PHONY: assets/js
@@ -60,8 +60,8 @@ clean/assets/js:
 	rm -rf $(ESBUILD_OUT)
 
 assets/css/styles.css: resources/css/tailwind.css $(TEMPLATES) node_modules
-	npx --yes @tailwindcss/cli -i ./resources/css/tailwind.css -o ./$@ >> make.log 2>&1
-	touch $@
+	npx --yes @tailwindcss/cli -i ./resources/css/tailwind.css -o ./$@ $(LOG)
+	@touch $@
 
 .PHONY: assets/css
 assets/css: assets/css/styles.css
@@ -74,10 +74,16 @@ clean/assets/css:
 prep:
 	@$(MAKE) -j4 assets/css assets/js templates sql
 
+$(BIN): prep
+	CGO_ENABLED=0 $(GO) build $(LOG)
+
+.PHONY: build/log-notice
+build/log-notice:
+	@printf "\033[34m\033[1m%s\033[0m\033[0m\n" "logs are saved into $(LOGFILE)"
+
 .PHONY: build
-build: prep
-	@printf "\033[1m%s\033[0m\n" "Logs are saved into $(LOGFILE)"
-	CGO_ENABLED=0 $(GO) build
+build: build/log-notice $(BIN)
+	@printf "\033[32m\033[1m%s\033[0m\033[0m\n" "success"
 
 .PHONY: clean/build
 clean/build:
@@ -101,7 +107,7 @@ live/sql:
 	--log.main_only "true" $(LIVELOG)
 
 live/templ:
-	@printf "\033[1mstarting templ proxy, url: \033[0m\033[32m%s\033[0m\n" "http://localhost:7331"
+	@printf "\033[1mstarting templ proxy, url:\033[0m \033[32m\033[4m%s\033[0m\033[0m\n" "http://localhost:7331"
 	@$(GO) tool github.com/a-h/templ/cmd/templ generate --watch --proxy="http://localhost:8080" --open-browser=false --log-level="warn" $(LIVELOG)
 
 live/server:
@@ -136,11 +142,14 @@ live/sync_assets:
 	--build.include_ext "js,css" \
 	--log.main_only "true" $(LIVELOG)
 
+.PHONY: live/log-notice
+live/log-notice:
+	@printf "\033[1m\033[34m%s\033[0m\033[0m\n" "logs are saved into $(LIVELOGFILE)"
+
 # See:
 # https://templ.guide/developer-tools/live-reload-with-other-tools
-live:
-	@printf "\033[1m%s\033[0m\n" "Logs are saved into $(LIVELOGFILE)"
-	$(MAKE) -j6 live/sql live/templ live/server live/esbuild live/sync_assets live/tailwind
+live: live/log-notice
+	@$(MAKE) -j6 live/sql live/templ live/server live/esbuild live/sync_assets live/tailwind
 
 .PHONY: clean/live
 clean/live:
