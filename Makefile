@@ -67,7 +67,7 @@ assets/css/styles.css: resources/css/tailwind.css $(TEMPLATES) node_modules
 
 .PHONY: clean/assets/css
 clean/assets/css:
-	rm -rf $(assets/css/styles.css)
+	rm -rf assets/css/styles.css
 
 .PHONY: clean/assets
 clean/assets:
