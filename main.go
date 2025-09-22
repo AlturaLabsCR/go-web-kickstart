@@ -13,40 +13,26 @@ import (
 	"app/router"
 )
 
-const (
-	defaultPort = "8080"
-)
-
 //go:embed assets/*
 var assetsFS embed.FS
 
 func main() {
-	var (
-		port       = os.Getenv("APP_PORT")
-		production = os.Getenv("APP_PROD") == "1"
-		logLevel   = os.Getenv("APP_LOG_LEVEL")
-		dbDriver   = os.Getenv("APP_DB_DRIVER")
-		dbConn     = os.Getenv("APP_DB_CONN")
-	)
+	config.Init()
 
-	if port == "" {
-		port = defaultPort
-	}
-
-	logger, err := config.InitLogger(production, logLevel)
+	logger, err := config.InitLogger()
 	if err != nil {
 		print("failed logger initialization: %v\n", err)
 		os.Exit(1)
 	}
 
-	database, err := config.InitDB(dbDriver, dbConn)
+	database, err := config.InitDB()
 	if err != nil {
 		print("failed database initialization: %v\n", err)
 		os.Exit(1)
 	}
 
 	handler := handlers.New(handlers.HandlerParams{
-		Production: production,
+		Production: config.Production,
 		DB:         database,
 		Logger:     logger,
 	})
@@ -56,7 +42,7 @@ func main() {
 	routes.Handle(
 		"GET /assets/",
 		middleware.DisableCacheInDevMode(
-			production,
+			config.Production,
 			http.FileServer(http.FS(assetsFS)),
 		),
 	)
@@ -65,10 +51,10 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		logger.Info("server starting", "address", ":"+port)
+		logger.Info("server starting", "address", ":"+config.Port)
 
-		if err := http.ListenAndServe(":"+port, routes); err != nil {
-			logger.Error("failed to start server", "port", port, "error", err)
+		if err := http.ListenAndServe(":"+config.Port, routes); err != nil {
+			logger.Error("failed to start server", "port", config.Port, "error", err)
 			os.Exit(1)
 		}
 	}()

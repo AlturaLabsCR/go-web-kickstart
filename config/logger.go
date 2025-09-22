@@ -1,37 +1,18 @@
 package config
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
-	"strconv"
 )
 
-const (
-	defaultSeverity = 0
-	// LevelDebug = -4
-	// LevelInfo  = 0
-	// LevelWarn  = 4
-	// LevelError = 8
-)
-
-func InitLogger(production bool, severityStr string) (*slog.Logger, error) {
-	severity := defaultSeverity
-	if severityStr != "" {
-		var err error
-		severity, err = strconv.Atoi(severityStr)
-		if err != nil {
-			return nil, fmt.Errorf("error converting severity string to int: %v", err)
-		}
-	}
-
+func InitLogger() (*slog.Logger, error) {
 	logOpts := &slog.HandlerOptions{
-		AddSource: !production,
-		Level:     slog.Level(severity),
+		AddSource: !Production,
+		Level:     slog.Level(LogLevel),
 	}
 
 	var logger *slog.Logger
-	if production {
+	if Production {
 		logger = slog.New(slog.NewJSONHandler(os.Stdout, logOpts))
 	} else {
 		logger = slog.New(slog.NewTextHandler(os.Stdout, logOpts))

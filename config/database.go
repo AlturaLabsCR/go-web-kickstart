@@ -9,21 +9,8 @@ import (
 	// _ "github.com/sijms/go-ora/v2"
 )
 
-const (
-	defaultDriver = "sqlite"
-	defaultConn   = "./db.db"
-)
-
-func InitDB(d, c string) (*sql.DB, error) {
-	if d == "" {
-		d = defaultDriver
-	}
-
-	if c == "" {
-		c = defaultConn
-	}
-
-	db, err := sql.Open(d, c)
+func InitDB() (*sql.DB, error) {
+	db, err := sql.Open(dbDriver, dbConn)
 	if err != nil {
 		return nil, err
 	}
