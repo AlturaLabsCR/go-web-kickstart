@@ -6,8 +6,9 @@ DIST_FLAGS = -ldflags "-s -w"
 DIST_FOLDER = dist
 GO_ENV = CGO_ENABLED=0
 
-SQLC = $(GO) tool github.com/sqlc-dev/sqlc/cmd/sqlc
-TEMPL = $(GO) tool github.com/a-h/templ/cmd/templ
+SQLC = github.com/sqlc-dev/sqlc/cmd/sqlc
+TEMPL = github.com/a-h/templ/cmd/templ
+AIR = github.com/air-verse/air@v1.63.0
 
 NPM = npm
 NPX = npx
@@ -26,7 +27,7 @@ all: build
 SQL=$(wildcard database/*.sql)
 GEN += internal/db
 internal/db: $(SQL)
-	$(SQLC) generate $(LOG)
+	$(GO) tool $(SQLC) generate $(LOG)
 	@touch $@
 
 .PHONY: clean/sql
@@ -37,7 +38,7 @@ TEMPLATES := $(wildcard templates/*.templ)
 TEMPLATES_GEN := $(TEMPLATES:.templ=_templ.go)
 GEN += $(TEMPLATES_GEN)
 $(TEMPLATES_GEN) &: $(TEMPLATES)
-	$(TEMPL) generate -v $(LOG)
+	$(GO) tool $(TEMPL) generate -v $(LOG)
 	@touch $@
 
 .PHONY: clean/templates
@@ -97,8 +98,8 @@ run: $(GEN)
 # 	./scripts/release.sh
 
 live/sql:
-	@$(GO) run github.com/air-verse/air@v1.62.0 \
-	--build.cmd "$(GO) tool github.com/sqlc-dev/sqlc/cmd/sqlc generate" \
+	@$(GO) run $(AIR) \
+	--build.cmd "$(GO) tool $(SQLC) generate" \
 	--build.bin "/bin/true" \
 	--build.delay "100" \
 	--build.exclude_dir "" \
@@ -111,7 +112,7 @@ live/templ:
 	@$(GO) tool github.com/a-h/templ/cmd/templ generate --watch --proxy="http://localhost:8080" --open-browser=false --log-level="warn" $(LIVELOG)
 
 live/server: $(GEN)
-	@$(GO) run github.com/air-verse/air@v1.62.0 \
+	@$(GO) run $(AIR) \
 	--build.cmd "$(GO) build -o tmp/bin/main" --build.bin "tmp/bin/main" --build.delay "100" \
 	--build.exclude_dir "node_modules" \
 	--build.include_ext "go,js,css" \
@@ -120,7 +121,7 @@ live/server: $(GEN)
 	--log.main_only "true" $(LIVELOG)
 
 live/tailwind: node_modules
-	@$(GO) run github.com/air-verse/air@v1.62.0 \
+	@$(GO) run $(AIR) \
 	--build.cmd "$(NPX) --yes @tailwindcss/cli -i ./resources/css/tailwind.css -o ./assets/css/styles.css" \
 	--build.bin "/bin/true" \
 	--build.delay "100" \
@@ -133,7 +134,7 @@ live/esbuild: node_modules
 	@$(NPX) --yes esbuild ./resources/ts/index.ts --bundle --outdir=assets/js --watch=forever $(LIVELOG)
 
 live/sync_assets: assets
-	@$(GO) run github.com/air-verse/air@v1.62.0 \
+	@$(GO) run $(AIR) \
 	--build.cmd "$(GO) tool github.com/a-h/templ/cmd/templ generate --notify-proxy" \
 	--build.bin "/bin/true" \
 	--build.delay "100" \
