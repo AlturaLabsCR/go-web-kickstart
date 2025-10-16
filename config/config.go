@@ -13,10 +13,10 @@ var (
 	AppTitle string = "My App Title"
 
 	RootPrefix string = "/"
-	// These depend on the RootPrefix, so, they must be initialized after checking
-	// for any overwrites of RootPrefix
-	MainCSS string
-	IndexJS string
+
+	// Depends on the RootPrefix, so, must be initialized after checking for any
+	// overwrites of RootPrefix
+	Assets string
 
 	Production bool   = false
 	Port       string = "8080"
@@ -42,8 +42,8 @@ func Init() {
 	if r != "" {
 		RootPrefix = r
 	}
-	MainCSS = RootPrefix + "assets/css/styles.css"
-	IndexJS = RootPrefix + "assets/js/index.js"
+
+	Assets = RootPrefix + "assets"
 
 	Production = os.Getenv(envProd) == "1"
 
