@@ -1,9 +1,11 @@
 package templates
 
-templ Home() {
+templ Home(tr func(key string) string) {
 	<section>
 		<div class="container">
-			Hello from templates/home.templ
+			<p>templates/home.templ:</p>
+			<p>{ tr("hello_world") }</p>
+			<p>{ tr("message") }</p>
 		</div>
 	</section>
 }

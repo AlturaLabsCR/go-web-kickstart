@@ -17,5 +17,6 @@ func (h *Handler) ListDogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := templates.Dogs(dogs).Render(ctx, w); err != nil {
+		h.Log().Error("list dogs", "error", err)
 	}
 }

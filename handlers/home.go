@@ -9,7 +9,7 @@ import (
 func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	content := templates.Home()
+	content := templates.Home(h.Translator(r))
 
 	templates.Base(content).Render(ctx, w)
 }
