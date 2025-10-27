@@ -9,10 +9,8 @@ import (
 
 	"app/config"
 	"app/handlers"
-	"app/i18n"
 	"app/middleware"
 	"app/router"
-	"app/utils/smtp"
 )
 
 //go:embed assets/*
@@ -33,22 +31,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	locales := map[string]map[string]string{
-		"es": i18n.ES,
-		"en": i18n.EN,
-	}
+	locales := config.InitLocales()
+
+	smtpAuth := config.InitSMTPAuth()
 
 	handler := handlers.New(
 		handlers.HandlerParams{
-			Production: config.Production,
-			DB:         database,
-			Logger:     logger,
-		},
-		i18n.New(locales).TranslateHTTPRequest,
-		smtp.AuthParams{
-			Host: config.ServerSMTPHost,
-			Port: config.ServerSMTPPort,
-			Pass: config.ServerSMTPPass,
+			Production:   config.Production,
+			Logger:       logger,
+			Database:     database,
+			Locales:      locales,
+			SMTPAuth:     smtpAuth,
+			ServerSecret: config.ServerSecret,
 		},
 	)
 

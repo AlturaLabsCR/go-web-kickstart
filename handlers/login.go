@@ -69,7 +69,7 @@ func (h *Handler) SendVerification(w http.ResponseWriter, r *http.Request) {
 		verifyURL,
 	)
 
-	if err := h.SMTPClient.SendText(
+	if err := h.SMTPClient().SendText(
 		config.ServerSMTPUser,
 		[]string{email},
 		"Email de confirmación",

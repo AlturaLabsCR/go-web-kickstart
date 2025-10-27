@@ -2,6 +2,9 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
 	"os"
 	"strconv"
 
@@ -26,10 +29,12 @@ var (
 	dbDriver   string = "sqlite"
 	dbConn     string = "./db.db"
 
-	ServerSMTPUser string = "john@doe.com"
+	ServerSMTPUser string
 	ServerSMTPHost string
 	ServerSMTPPort string
 	ServerSMTPPass string
+
+	ServerSecret string
 )
 
 const (
@@ -43,9 +48,12 @@ const (
 	envCnn    = envPrefix + "DB_CONN"
 	envRoot   = envPrefix + "ROOT_PREFIX"
 
+	envSMTPUser = envPrefix + "SMTP_USER"
 	envSMTPHost = envPrefix + "SMTP_HOST"
 	envSMTPPort = envPrefix + "SMTP_PORT"
 	envSMTPPass = envPrefix + "SMTP_PASS"
+
+	envServerSecret = envPrefix + "SECRET"
 )
 
 func Init() {
@@ -65,12 +73,19 @@ func Init() {
 		Port = p
 	}
 
+	ServerSMTPUser = os.Getenv(envSMTPUser)
 	ServerSMTPHost = os.Getenv(envSMTPHost)
 	ServerSMTPPort = os.Getenv(envSMTPPort)
 	ServerSMTPPass = os.Getenv(envSMTPPass)
 
-	if ServerSMTPHost == "" || ServerSMTPPort == "" || ServerSMTPPass == "" {
+	if ServerSMTPUser == "" || ServerSMTPHost == "" || ServerSMTPPort == "" || ServerSMTPPass == "" {
 		// Handle empty credentials
+	}
+
+	ServerSecret = os.Getenv(envServerSecret)
+
+	if ServerSecret == "" {
+		ServerSecret = generateRandomSecret(32)
 	}
 
 	logLevelStr := os.Getenv(envLog)
@@ -91,4 +106,13 @@ func Init() {
 	if conn != "" {
 		dbConn = conn
 	}
+}
+
+func generateRandomSecret(n int) string {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		// never return predictable bytes
+		panic(fmt.Errorf("failed to generate random secret: %w", err))
+	}
+	return hex.EncodeToString(b)
 }
