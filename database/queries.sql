@@ -17,3 +17,22 @@ INSERT INTO "dogs" (
 ) VALUES (
     ?, ?, ?
 ) RETURNING *;
+
+-- name: InsertTempKey :exec
+INSERT INTO temp_keys (
+  temp_key_email,
+  temp_key,
+  temp_key_expires_unix
+) VALUES (?, ?, ?);
+
+-- name: GetTempKey :one
+SELECT * FROM temp_keys WHERE temp_key_email = ?;
+
+-- name: UpdateTempKey :exec
+UPDATE temp_keys SET
+temp_key = ?,
+temp_key_expires_unix = ?
+WHERE temp_key_email = ?;
+
+-- name: SetTempKeyUsed :exec
+UPDATE temp_keys SET temp_key_expires_unix = 0 WHERE temp_key_email = ?;

@@ -4,6 +4,8 @@ package config
 import (
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 var (
@@ -23,6 +25,11 @@ var (
 	LogLevel   int    = 0 // -4:Debug 0:Info 4:Warn 8:Error
 	dbDriver   string = "sqlite"
 	dbConn     string = "./db.db"
+
+	ServerSMTPUser string = "john@doe.com"
+	ServerSMTPHost string
+	ServerSMTPPort string
+	ServerSMTPPass string
 )
 
 const (
@@ -35,9 +42,15 @@ const (
 	envDvr    = envPrefix + "DB_DRIVER"
 	envCnn    = envPrefix + "DB_CONN"
 	envRoot   = envPrefix + "ROOT_PREFIX"
+
+	envSMTPHost = envPrefix + "SMTP_HOST"
+	envSMTPPort = envPrefix + "SMTP_PORT"
+	envSMTPPass = envPrefix + "SMTP_PASS"
 )
 
 func Init() {
+	godotenv.Load()
+
 	r := os.Getenv(envRoot)
 	if r != "" {
 		RootPrefix = r
@@ -50,6 +63,14 @@ func Init() {
 	p := os.Getenv(envPort)
 	if p != "" {
 		Port = p
+	}
+
+	ServerSMTPHost = os.Getenv(envSMTPHost)
+	ServerSMTPPort = os.Getenv(envSMTPPort)
+	ServerSMTPPass = os.Getenv(envSMTPPass)
+
+	if ServerSMTPHost == "" || ServerSMTPPort == "" || ServerSMTPPass == "" {
+		// Handle empty credentials
 	}
 
 	logLevelStr := os.Getenv(envLog)

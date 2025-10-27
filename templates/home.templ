@@ -1,5 +1,7 @@
 package templates
 
+import "app/config"
+
 templ Home(tr func(key string) string) {
 	<section>
 		<div class="container">
@@ -7,5 +9,6 @@ templ Home(tr func(key string) string) {
 			<p>{ tr("hello_world") }</p>
 			<p>{ tr("message") }</p>
 		</div>
+		<a href={ config.RootPrefix + "login" }>Click to login</a>
 	</section>
 }

@@ -5,11 +5,14 @@ import (
 	"database/sql"
 	"log/slog"
 	"net/http"
+
+	"app/utils/smtp"
 )
 
 type Handler struct {
 	params     HandlerParams
 	Translator func(*http.Request) func(string) string
+	SMTPClient *smtp.Auth
 }
 
 type HandlerParams struct {
@@ -18,10 +21,11 @@ type HandlerParams struct {
 	Logger     *slog.Logger
 }
 
-func New(params HandlerParams, translatorFunc func(*http.Request) func(string) string) *Handler {
+func New(params HandlerParams, translatorFunc func(*http.Request) func(string) string, smtpParams smtp.AuthParams) *Handler {
 	return &Handler{
 		params:     params,
 		Translator: translatorFunc,
+		SMTPClient: smtp.Client(smtpParams),
 	}
 }
 

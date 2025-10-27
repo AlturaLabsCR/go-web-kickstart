@@ -4,6 +4,7 @@ go 1.25.3
 
 require (
 	github.com/a-h/templ v0.3.960
+	github.com/joho/godotenv v1.5.1
 	golang.org/x/text v0.30.0
 	modernc.org/sqlite v1.39.1
 )

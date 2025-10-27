@@ -13,7 +13,7 @@ func (h *Handler) RenderName(w http.ResponseWriter, r *http.Request) {
 
 	name := r.PathValue("name")
 
-	if err := templates.Hello(name).Render(ctx, w); err != nil {
-		h.Log().Info("template render", "error", err)
-	}
+	content := templates.Hello(name)
+
+	templates.Base(content).Render(ctx, w)
 }

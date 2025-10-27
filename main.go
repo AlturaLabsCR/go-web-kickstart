@@ -12,6 +12,7 @@ import (
 	"app/i18n"
 	"app/middleware"
 	"app/router"
+	"app/utils/smtp"
 )
 
 //go:embed assets/*
@@ -44,6 +45,11 @@ func main() {
 			Logger:     logger,
 		},
 		i18n.New(locales).TranslateHTTPRequest,
+		smtp.AuthParams{
+			Host: config.ServerSMTPHost,
+			Port: config.ServerSMTPPort,
+			Pass: config.ServerSMTPPass,
+		},
 	)
 
 	routes := router.Routes(handler)
