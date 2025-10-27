@@ -28,13 +28,15 @@ type HandlerParams struct {
 	Database     *sql.DB
 	Locales      map[string]map[string]string
 	SMTPAuth     smtp.AuthParams
+	CookieName   string
+	CookiePath   string
 	ServerSecret string
 }
 
 func New(params HandlerParams) *Handler {
 	sessions := sessions.New[User](sessions.StoreParams{
-		CookieName:     "session",
-		CookiePath:     "/",
+		CookieName:     params.CookieName,
+		CookiePath:     params.CookiePath,
 		CookieSameSite: http.SameSiteStrictMode,
 		CookieTTL:      24 * time.Hour,
 		JWTSecret:      params.ServerSecret,

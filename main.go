@@ -43,6 +43,8 @@ func main() {
 			Locales:      locales,
 			SMTPAuth:     smtpAuth,
 			ServerSecret: config.ServerSecret,
+			CookieName:   config.CookieName,
+			CookiePath:   config.RootPrefix,
 		},
 	)
 

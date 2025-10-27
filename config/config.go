@@ -15,9 +15,9 @@ var (
 	// Default values are initialized here, these will be used unless overwritten
 	// by the Init() method
 
-	AppTitle string = "My App Title"
-
+	AppTitle   string = "My App Title"
 	RootPrefix string = "/"
+	CookieName string = "session"
 
 	// Depends on the RootPrefix, so, must be initialized after checking for any
 	// overwrites of RootPrefix
