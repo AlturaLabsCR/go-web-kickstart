@@ -13,9 +13,12 @@ templ Login(tr func(key string) string) {
 			name="email"
 			placeholder="email"
 			required
+			class="border"
 		/>
 		<br/>
-		<button type="submit">send verification</button>
+		<button type="submit" class="border">
+			send verification
+		</button>
 	</form>
 }
 
@@ -30,7 +33,9 @@ templ LoginVerify(tr func(key string) string, email string) {
 	<div id="login_form">
 		<p>{ tr("login_verify") + " " + email }</p>
 		<a href={ config.RootPrefix + "protected" }>
-			<button type="button">{ tr("login_verify_confirm") }</button>
+			<button type="button" class="border">
+				{ tr("login_verify_confirm") }
+			</button>
 		</a>
 	</div>
 }

@@ -5,10 +5,13 @@ import "app/config"
 templ Home(tr func(key string) string) {
 	<section>
 		<div class="container">
-			<p>templates/home.templ:</p>
-			<p>{ tr("hello_world") }</p>
-			<p>{ tr("message") }</p>
+			<p>templates/home.templ</p>
+			<p>{ tr("hello_world") } { tr("message") }</p>
 		</div>
-		<a href={ config.RootPrefix + "login" }>Click to login</a>
+		<a href={ config.RootPrefix + "login" }>
+			<button type="button" class="border">
+				Login
+			</button>
+		</a>
 	</section>
 }

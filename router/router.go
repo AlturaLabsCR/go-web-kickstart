@@ -15,7 +15,7 @@ func Routes(h *handlers.Handler) *http.ServeMux {
 	router.HandleFunc("GET /login", h.Login)
 	router.HandleFunc("POST /login", h.SendVerification)
 	router.HandleFunc("GET /verify", h.Verify)
-	router.Handle("GET /{name}", middleware.With(middleware.Protected, h.RenderName))
+	router.Handle("GET /{name}", middleware.With(h.Protected, h.RenderName))
 	router.HandleFunc("GET /dogs", h.ListDogs)
 
 	return router

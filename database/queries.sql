@@ -21,7 +21,7 @@ INSERT INTO "dogs" (
 -- name: InsertTempKey :exec
 INSERT INTO temp_keys (
   temp_key_email,
-  temp_key,
+  temp_key_hash,
   temp_key_expires_unix
 ) VALUES (?, ?, ?);
 
@@ -30,7 +30,7 @@ SELECT * FROM temp_keys WHERE temp_key_email = ?;
 
 -- name: UpdateTempKey :exec
 UPDATE temp_keys SET
-temp_key = ?,
+temp_key_hash = ?,
 temp_key_expires_unix = ?
 WHERE temp_key_email = ?;
 

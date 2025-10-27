@@ -41,27 +41,41 @@ const (
 	// You should use a prefix for any overwrites via env to avoid conflicts with
 	// other programs
 	envPrefix = "APP_"
-	envPort   = envPrefix + "PORT"
-	envProd   = envPrefix + "PROD"
-	envLog    = envPrefix + "LOG_LEVEL"
-	envDvr    = envPrefix + "DB_DRIVER"
-	envCnn    = envPrefix + "DB_CONN"
-	envRoot   = envPrefix + "ROOT_PREFIX"
+
+	envAppTitle = envPrefix + "TITLE"
+
+	envPort = envPrefix + "PORT"
+	envProd = envPrefix + "PROD"
+	envLog  = envPrefix + "LOG_LEVEL"
+	envDvr  = envPrefix + "DB_DRIVER"
+	envCnn  = envPrefix + "DB_CONN"
+	envRoot = envPrefix + "ROOT_PREFIX"
 
 	envSMTPUser = envPrefix + "SMTP_USER"
 	envSMTPHost = envPrefix + "SMTP_HOST"
 	envSMTPPort = envPrefix + "SMTP_PORT"
 	envSMTPPass = envPrefix + "SMTP_PASS"
 
+	envCookieName   = envPrefix + "COOKIE_NAME"
 	envServerSecret = envPrefix + "SECRET"
 )
 
 func Init() {
 	godotenv.Load()
 
+	a := os.Getenv(envAppTitle)
+	if a != "" {
+		AppTitle = a
+	}
+
 	r := os.Getenv(envRoot)
 	if r != "" {
 		RootPrefix = r
+	}
+
+	c := os.Getenv(envCookieName)
+	if c != "" {
+		CookieName = c
 	}
 
 	Assets = RootPrefix + "assets/"

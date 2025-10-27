@@ -13,7 +13,9 @@ func (h *Handler) RenderName(w http.ResponseWriter, r *http.Request) {
 
 	name := r.PathValue("name")
 
-	content := templates.Hello(name)
+	email, _ := r.Context().Value(ctxEmail{}).(string)
+
+	content := templates.Hello(email, name)
 
 	templates.Base(content).Render(ctx, w)
 }

@@ -12,14 +12,10 @@ import (
 	"app/utils/smtp"
 )
 
-type User struct {
-	Email string
-}
-
 type Handler struct {
 	params     HandlerParams
 	Translator func(*http.Request) func(string) string
-	Sessions   *sessions.Store[User]
+	Sessions   *sessions.Store[string]
 }
 
 type HandlerParams struct {
@@ -34,7 +30,7 @@ type HandlerParams struct {
 }
 
 func New(params HandlerParams) *Handler {
-	sessions := sessions.New[User](sessions.StoreParams{
+	sessions := sessions.New[string](sessions.StoreParams{
 		CookieName:     params.CookieName,
 		CookiePath:     params.CookiePath,
 		CookieSameSite: http.SameSiteStrictMode,

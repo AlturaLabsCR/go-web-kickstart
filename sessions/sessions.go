@@ -75,6 +75,10 @@ func (s *Store[T]) JWTValidate(r *http.Request) (T, error) {
 		return zero, fmt.Errorf("get cookie: %w", err)
 	}
 
+	if !cookie.Expires.IsZero() && cookie.Expires.Before(time.Now()) {
+		return zero, fmt.Errorf("cookie expired at %v", cookie.Expires)
+	}
+
 	token, err := jwt.ParseWithClaims(cookie.Value, &Claims[T]{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
