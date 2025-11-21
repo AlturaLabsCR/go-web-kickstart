@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"database/sql"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -22,14 +23,14 @@ type HandlerParams struct {
 	Production   bool
 	Logger       *slog.Logger
 	Database     *sql.DB
-	Locales      map[string]map[string]string
+	Locales      map[string]i18n.Locale
 	SMTPAuth     smtp.AuthParams
 	CookieName   string
 	CookiePath   string
 	ServerSecret string
 }
 
-func New(params HandlerParams) *Handler {
+func New(params HandlerParams) (*Handler, error) {
 	sessions := sessions.New[string](sessions.StoreParams{
 		CookieName:     params.CookieName,
 		CookiePath:     params.CookiePath,
@@ -38,13 +39,17 @@ func New(params HandlerParams) *Handler {
 		JWTSecret:      params.ServerSecret,
 	})
 
-	translator := i18n.New(params.Locales).TranslateHTTPRequest
+	translator, err := i18n.New(params.Locales, "es")
+	if err != nil {
+		return nil, errors.New("bad translator params")
+	}
+	translatorFunc := translator.RequestTranslator
 
 	return &Handler{
 		params:     params,
-		Translator: translator,
+		Translator: translatorFunc,
 		Sessions:   sessions,
-	}
+	}, nil
 }
 
 func (h *Handler) Prod() bool {

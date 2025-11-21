@@ -14,11 +14,11 @@ NPM = npm
 NPX = npx
 
 LOGFILE = build.log
-LOG = >> $(LOGFILE) 2>&1
+# LOG = >> $(LOGFILE) 2>&1
 LIVELOGFILE = live.log
-LIVELOG = >> $(LIVELOGFILE) 2>&1
+# LIVELOG = >> $(LIVELOGFILE) 2>&1
 DISTLOGFILE = dist.log
-DISTLOG = >> $(DISTLOGFILE) 2>&1
+# DISTLOG = >> $(DISTLOGFILE) 2>&1
 GEN =
 
 .PHONY: all
@@ -145,7 +145,7 @@ live/sync_assets: assets
 
 .PHONY: live/log-notice
 live/log-notice:
-	@printf "\033[1m\033[34m%s\033[0m\033[0m\n" "logs are saved into $(LIVELOGFILE)"
+	@if [ "$(LIVELOG)" != "" ]; then printf "\033[1m\033[34m%s\033[0m\033[0m\n" "logs are saved into $(LIVELOGFILE)"; fi
 
 # See:
 # https://templ.guide/developer-tools/live-reload-with-other-tools

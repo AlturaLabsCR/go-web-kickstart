@@ -1,30 +1,73 @@
-// Package i18n
+// Package i18n provides simple locale selection and translation utilities.
 package i18n
 
 import (
 	"net/http"
-
-	"golang.org/x/text/language"
+	"slices"
+	"sort"
+	"strconv"
+	"strings"
 )
 
-// Locales is a map of locales and their translations.
-// Example: { "en": {"hello": "Hello"}, "es": {"hello": "Hola"} }
-type Locales map[string]map[string]string
+type errStr string
 
-// Translator holds all available translations.
+func (e errStr) Error() string {
+	return string(e)
+}
+
+const (
+	langHeaderKey = "Accept-Language"
+	langCookieKey = "lang"
+
+	ErrEmptyLocales    = errStr("passed locales map is empty")
+	ErrInvalidFallback = errStr("passed fallback key does not exist in locales map")
+)
+
+// Language represents a parsed Accept-Language entry.
+type Language struct {
+	Tag     string  // e.g. "en"
+	Variant string  // e.g. "US"
+	Weight  float64 // q-value, 1.0 = highest
+}
+
+// Locale is a set of translation key-value pairs.
+type Locale map[string]string
+
+// Translator loads locales and performs language lookup.
 type Translator struct {
-	locales Locales
+	locales  map[string]Locale
+	fallback string
 }
 
 // New creates a new Translator with the given locales.
-func New(locales Locales) *Translator {
-	return &Translator{locales: locales}
+// Example keys: "en", "es", "es-419"
+func New(locales map[string]Locale, fallback string) (*Translator, error) {
+	if len(locales) < 1 {
+		return nil, ErrEmptyLocales
+	}
+
+	if _, ok := locales[fallback]; !ok {
+		return nil, ErrInvalidFallback
+	}
+
+	return &Translator{locales, fallback}, nil
 }
 
-// Translate translates a given key for a specific locale.
-// Fallback: returns the key itself if not found.
-func (t *Translator) Translate(locale, key string) string {
-	if loc, ok := t.locales[locale]; ok {
+// RequestTranslator returns a function that translates keys according to the
+// best language available for the incoming http.Request.
+func (t *Translator) RequestTranslator(r *http.Request) func(string) string {
+	reqLangs := requestLanguages(r)
+	best := t.preferredLanguage(reqLangs)
+
+	return func(key string) string {
+		return t.Translate(best, key)
+	}
+}
+
+// Translate returns a translated key in the given language. If missing, falls
+// back to returning the key itself.
+func (t *Translator) Translate(lang, key string) string {
+	if loc, ok := t.locales[lang]; ok {
 		if val, ok := loc[key]; ok {
 			return val
 		}
@@ -32,64 +75,98 @@ func (t *Translator) Translate(locale, key string) string {
 	return key
 }
 
-// TranslateHTTPRequest auto-detects the user's preferred language
-// (from cookie or Accept-Language header) and returns a closure
-// that translates by key, e.g. tr("hello").
-func (t *Translator) TranslateHTTPRequest(r *http.Request) func(string) string {
-	// Infer supported locales from the Translator
+// preferredLanguage selects the best matching language from the translator's
+// supported locales.
+func (t *Translator) preferredLanguage(req []Language) string {
+	if len(t.locales) == 0 {
+		return ""
+	}
+
 	supported := make([]string, 0, len(t.locales))
 	for lang := range t.locales {
-		supported = append(supported, lang)
+		supported = append(supported, strings.ToLower(string(lang)))
+	}
+	sort.Strings(supported)
+
+	for _, r := range req {
+		full := r.Tag
+		if r.Variant != "" {
+			full = full + "-" + r.Variant
+		}
+
+		// exact match: "es-419"
+		if slices.Contains(supported, full) {
+			return full
+		}
+
+		// tag-only match: "es"
+		if slices.Contains(supported, r.Tag) {
+			return r.Tag
+		}
 	}
 
-	// Fallback = first locale
-	fallback := ""
-	if len(supported) > 0 {
-		fallback = supported[0]
-	}
-
-	// Detect user language
-	lang := DetectLanguage(r, supported, fallback)
-
-	return func(key string) string {
-		return t.Translate(lang, key)
-	}
+	return t.fallback
 }
 
-// DetectLanguage picks a language from cookie or header.
-func DetectLanguage(r *http.Request, supported []string, fallback string) string {
-	if c, err := r.Cookie("lang"); err == nil {
-		for _, s := range supported {
-			if s == c.Value {
-				return s
+// requestLanguages obtains language preferences from cookies or Accept-Language
+// header.
+func requestLanguages(r *http.Request) []Language {
+	if c, err := r.Cookie(langCookieKey); err == nil {
+		return parseLanguages(c.Value)
+	}
+
+	header := r.Header.Get(langHeaderKey)
+	return parseLanguages(header)
+}
+
+// parseLanguages parses an Accept-Language header into a slice of Language
+// objects, sorted by descending weight.
+func parseLanguages(s string) []Language {
+	s = strings.ReplaceAll(s, " ", "")
+	if s == "" {
+		return nil
+	}
+
+	langs := []Language{}
+
+	for langStr := range strings.SplitSeq(s, ",") {
+		if l := parseLanguage(langStr); l.Tag != "" {
+			langs = append(langs, l)
+		}
+	}
+
+	sort.SliceStable(langs, func(i, j int) bool {
+		return langs[i].Weight > langs[j].Weight
+	})
+
+	return langs
+}
+
+// parseLanguage parses a single language entry such as "es-419;q=0.9".
+func parseLanguage(s string) Language {
+	base, qpart, hasQ := strings.Cut(s, ";")
+
+	if base == "" {
+		return Language{}
+	}
+
+	tag, variant, _ := strings.Cut(base, "-")
+
+	weight := 1.0
+
+	if hasQ {
+		if _, val, ok := strings.Cut(qpart, "q="); ok {
+			if w, err := strconv.ParseFloat(strings.TrimSpace(val), 64); err == nil {
+				weight = w
+			} else {
+				weight = 0
 			}
 		}
 	}
-	return DetectLanguageFromHeader(r, supported, fallback)
-}
 
-// DetectLanguageFromHeader reads and parses Accept-Language.
-func DetectLanguageFromHeader(r *http.Request, supported []string, fallback string) string {
-	header := r.Header.Get("Accept-Language")
-	if header == "" {
-		return fallback
+	return Language{
+		Tag:     tag,
+		Variant: variant,
+		Weight:  weight,
 	}
-
-	tags, _, err := language.ParseAcceptLanguage(header)
-	if err != nil {
-		return fallback
-	}
-
-	matcher := language.NewMatcher(localesToTags(supported))
-	tag, _, _ := matcher.Match(tags...)
-	base, _ := tag.Base()
-	return base.String()
-}
-
-func localesToTags(locales []string) []language.Tag {
-	tags := make([]language.Tag, len(locales))
-	for i, l := range locales {
-		tags[i] = language.Make(l)
-	}
-	return tags
 }

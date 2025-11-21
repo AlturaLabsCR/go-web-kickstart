@@ -35,7 +35,7 @@ func main() {
 
 	smtpAuth := config.InitSMTPAuth()
 
-	handler := handlers.New(
+	handler, _ := handlers.New(
 		handlers.HandlerParams{
 			Production:   config.Production,
 			Logger:       logger,
