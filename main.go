@@ -32,9 +32,10 @@ func main() {
 
 	routes := router.Init(handler)
 
-	prefix := config.Environment[config.EnvRootPrefix]
-	strippedPrefix, _ := strings.CutSuffix(prefix, "/")
-	routes.Handle(prefix, http.StripPrefix(strippedPrefix, routes))
+	if prefix := config.Environment[config.EnvRootPrefix]; prefix != "/" {
+		strippedPrefix, _ := strings.CutSuffix(prefix, "/")
+		routes.Handle(prefix, http.StripPrefix(strippedPrefix, routes))
+	}
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)

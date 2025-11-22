@@ -25,6 +25,18 @@ func New(params *HandlerParams) *Handler {
 	return &Handler{params}
 }
 
+func (h *Handler) Production() bool {
+	return h.params.Production
+}
+
+func (h *Handler) Log() *slog.Logger {
+	return h.params.Logger
+}
+
+func (h *Handler) DB() *pgxpool.Pool {
+	return h.params.Database
+}
+
 func (h *Handler) Translator(r *http.Request) func(string) string {
 	return h.params.TranslatorFunc(r)
 }

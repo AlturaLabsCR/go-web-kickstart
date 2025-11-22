@@ -7,20 +7,32 @@ import (
 	"app/handlers"
 )
 
-type Route struct {
-	Method  string
-	Path    string
-	Handler http.HandlerFunc
-}
-
-type Router struct {
-	routes []Route
+type endpoint struct {
+	method  string
+	path    string
+	handler func(http.ResponseWriter, *http.Request)
 }
 
 func Init(h *handlers.Handler) *http.ServeMux {
 	router := http.NewServeMux()
 
-	router.HandleFunc("GET /", h.Home)
+	endpoints := []endpoint{
+		{method: "", path: "", handler: nil},
+	}
+
+	loadRoutes(router, endpoints)
 
 	return router
+}
+
+func loadRoutes(router *http.ServeMux, endpoints []endpoint) {
+	for _, e := range endpoints {
+		var pattern string
+		if e.method != "" {
+			pattern = e.method + " " + e.path
+		} else {
+			pattern = e.path
+		}
+		router.HandleFunc(pattern, e.handler)
+	}
 }

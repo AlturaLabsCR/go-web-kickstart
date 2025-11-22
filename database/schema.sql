@@ -7,9 +7,9 @@ CREATE TABLE "owners" (
 );
 
 CREATE TABLE "dogs" (
-       "dog_id" BIGSERIAL PRIMARY KEY,
-       "dog_owner" BIGINT NOT NULL REFERENCES "owners"("owner_id"),
-       "dog_created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-       "dog_name" VARCHAR(64) NOT NULL,
-       "dog_weight" REAL NOT NULL
+  "dog_id" BIGSERIAL PRIMARY KEY,
+  "dog_owner" BIGINT NOT NULL REFERENCES "owners"("owner_id"),
+  "dog_created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "dog_name" VARCHAR(64) NOT NULL,
+  "dog_weight" REAL NOT NULL
 );
