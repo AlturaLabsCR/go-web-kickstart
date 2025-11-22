@@ -2,13 +2,13 @@ package templates
 
 import "app/config"
 
-templ Home(tr func(key string) string) {
+templ Home(tr func(string) string) {
 	<section>
 		<div class="container">
 			<p>templates/home.templ</p>
 			<p>{ tr("hello_world") } { tr("message") }</p>
 		</div>
-		<a href={ config.RootPrefix + "login" }>
+		<a href={ config.Endpoints[config.LoginPath] }>
 			<button type="button" class="border">
 				Login
 			</button>

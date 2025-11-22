@@ -3,20 +3,32 @@ package config
 import (
 	"log/slog"
 	"os"
+	"strconv"
 )
 
-func InitLogger() (*slog.Logger, error) {
+func InitLogger() *slog.Logger {
+	production := Environment[EnvProd] == "1"
+	levelStr := Environment[EnvLog]
+
+	level, err := strconv.Atoi(levelStr)
+	if err != nil {
+		level = int(slog.LevelInfo)
+	}
+
 	logOpts := &slog.HandlerOptions{
-		AddSource: !Production,
-		Level:     slog.Level(LogLevel),
+		AddSource: production,
+		Level:     slog.Level(level),
 	}
 
-	var logger *slog.Logger
-	if Production {
-		logger = slog.New(slog.NewJSONHandler(os.Stdout, logOpts))
-	} else {
-		logger = slog.New(slog.NewTextHandler(os.Stdout, logOpts))
+	if production {
+		return slog.New(slog.NewJSONHandler(
+			os.Stdout,
+			logOpts,
+		))
 	}
 
-	return logger, nil
+	return slog.New(slog.NewTextHandler(
+		os.Stdout,
+		logOpts,
+	))
 }

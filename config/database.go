@@ -1,23 +1,20 @@
 package config
 
 import (
-	"database/sql"
+	"context"
+	"fmt"
 
-	_ "modernc.org/sqlite"
-	// _ "github.com/lib/pq"
-	// _ "github.com/go-sql-driver/mysql"
-	// _ "github.com/sijms/go-ora/v2"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func InitDB() (*sql.DB, error) {
-	db, err := sql.Open(dbDriver, dbConn)
+func InitDB() *pgxpool.Pool {
+	pool, err := pgxpool.New(
+		context.Background(),
+		Environment[EnvConnstr],
+	)
 	if err != nil {
-		return nil, err
+		panic(fmt.Sprintf("unable to create connection pool: %v", err))
 	}
 
-	if err := db.Ping(); err != nil {
-		return nil, err
-	}
-
-	return db, nil
+	return pool
 }

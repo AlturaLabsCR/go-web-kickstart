@@ -10,11 +10,6 @@ func Stack(xs ...Middleware) Middleware {
 		for i := len(xs) - 1; i >= 0; i-- {
 			next = xs[i](next)
 		}
-
 		return next
 	}
-}
-
-func With(mw Middleware, h http.HandlerFunc) http.Handler {
-	return mw(h)
 }

@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"app/config"
 	"app/handlers"
-	"app/middleware"
 	"app/router"
 )
 
@@ -19,53 +19,31 @@ var assetsFS embed.FS
 func main() {
 	config.Init()
 
-	logger, err := config.InitLogger()
-	if err != nil {
-		print("failed logger initialization: %v\n", err)
-		os.Exit(1)
-	}
+	logger := config.InitLogger()
+	pool := config.InitDB()
+	tr := config.InitTranslator()
 
-	database, err := config.InitDB()
-	if err != nil {
-		print("failed database initialization: %v\n", err)
-		os.Exit(1)
-	}
+	handler := handlers.New(&handlers.HandlerParams{
+		Production:     config.Environment[config.EnvProd] == "1",
+		Logger:         logger,
+		Database:       pool,
+		TranslatorFunc: tr,
+	})
 
-	locales := config.InitLocales()
+	routes := router.Init(handler)
 
-	smtpAuth := config.InitSMTPAuth()
-
-	handler, _ := handlers.New(
-		handlers.HandlerParams{
-			Production:   config.Production,
-			Logger:       logger,
-			Database:     database,
-			Locales:      locales,
-			SMTPAuth:     smtpAuth,
-			ServerSecret: config.ServerSecret,
-			CookieName:   config.CookieName,
-			CookiePath:   config.RootPrefix,
-		},
-	)
-
-	routes := router.Routes(handler)
-
-	routes.Handle(
-		"GET /assets/",
-		middleware.DisableCacheInDevMode(
-			config.Production,
-			http.FileServer(http.FS(assetsFS)),
-		),
-	)
+	prefix := config.Environment[config.EnvRootPrefix]
+	strippedPrefix, _ := strings.CutSuffix(prefix, "/")
+	routes.Handle(prefix, http.StripPrefix(strippedPrefix, routes))
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		logger.Info("server starting", "address", ":"+config.Port)
+		logger.Info("server starting", "address", ":"+config.Environment[config.EnvPort])
 
-		if err := http.ListenAndServe(":"+config.Port, routes); err != nil {
-			logger.Error("failed to start server", "port", config.Port, "error", err)
+		if err := http.ListenAndServe(":"+config.Environment[config.EnvPort], routes); err != nil {
+			logger.Error("failed to start server", "port", config.Environment[config.EnvPort], "error", err)
 			os.Exit(1)
 		}
 	}()

@@ -23,6 +23,10 @@ const (
 	ErrInvalidFallback = errStr("passed fallback key does not exist in locales map")
 )
 
+// HTTPTranslatorFunc represents a function returning a function that translates
+// a key, given a request
+type HTTPTranslatorFunc func(*http.Request) func(string) string
+
 // Language represents a parsed Accept-Language entry.
 type Language struct {
 	Tag     string  // e.g. "en"
@@ -33,15 +37,18 @@ type Language struct {
 // Locale is a set of translation key-value pairs.
 type Locale map[string]string
 
+// Locales is a set of locale key-value pairs.
+type Locales map[string]Locale
+
 // Translator loads locales and performs language lookup.
 type Translator struct {
-	locales  map[string]Locale
+	locales  Locales
 	fallback string
 }
 
 // New creates a new Translator with the given locales.
 // Example keys: "en", "es", "es-419"
-func New(locales map[string]Locale, fallback string) (*Translator, error) {
+func New(locales Locales, fallback string) (*Translator, error) {
 	if len(locales) < 1 {
 		return nil, ErrEmptyLocales
 	}

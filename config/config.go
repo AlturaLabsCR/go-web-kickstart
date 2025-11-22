@@ -2,131 +2,38 @@
 package config
 
 import (
-	"crypto/rand"
-	"encoding/hex"
-	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/joho/godotenv"
 )
 
-var (
-	// Default values are initialized here, these will be used unless overwritten
-	// by the Init() method
-
-	AppTitle   string = "My App Title"
-	RootPrefix string = "/"
-	CookieName string = "session"
-
-	// Depends on the RootPrefix, so, must be initialized after checking for any
-	// overwrites of RootPrefix
-	Assets string
-
-	Production bool   = false
-	Port       string = "8080"
-	LogLevel   int    = 0 // -4:Debug 0:Info 4:Warn 8:Error
-	dbDriver   string = "sqlite"
-	dbConn     string = "./db.db"
-
-	ServerSMTPUser string
-	ServerSMTPHost string
-	ServerSMTPPort string
-	ServerSMTPPass string
-
-	ServerSecret string
+const (
+	AppTitle = "MyApp"
 )
 
 const (
-	// You should use a prefix for any overwrites via env to avoid conflicts with
-	// other programs
-	envPrefix = "APP_"
-
-	envAppTitle = envPrefix + "TITLE"
-
-	envPort = envPrefix + "PORT"
-	envProd = envPrefix + "PROD"
-	envLog  = envPrefix + "LOG_LEVEL"
-	envDvr  = envPrefix + "DB_DRIVER"
-	envCnn  = envPrefix + "DB_CONN"
-	envRoot = envPrefix + "ROOT_PREFIX"
-
-	envSMTPUser = envPrefix + "SMTP_USER"
-	envSMTPHost = envPrefix + "SMTP_HOST"
-	envSMTPPort = envPrefix + "SMTP_PORT"
-	envSMTPPass = envPrefix + "SMTP_PASS"
-
-	envCookieName   = envPrefix + "COOKIE_NAME"
-	envServerSecret = envPrefix + "SECRET"
+	envPrefix     = "APP_"
+	EnvProd       = envPrefix + "PROD"
+	EnvPort       = envPrefix + "PORT"
+	EnvLog        = envPrefix + "LOG_LEVEL"
+	EnvConnstr    = envPrefix + "DB_CONNSTR"
+	EnvRootPrefix = envPrefix + "ROOT_PREFIX"
 )
+
+var Environment = map[string]string{
+	EnvProd:       "0",
+	EnvPort:       "8080",
+	EnvLog:        "0",
+	EnvConnstr:    "",
+	EnvRootPrefix: "/",
+}
 
 func Init() {
 	godotenv.Load()
 
-	a := os.Getenv(envAppTitle)
-	if a != "" {
-		AppTitle = a
-	}
-
-	r := os.Getenv(envRoot)
-	if r != "" {
-		RootPrefix = r
-	}
-
-	c := os.Getenv(envCookieName)
-	if c != "" {
-		CookieName = c
-	}
-
-	Assets = RootPrefix + "assets/"
-
-	Production = os.Getenv(envProd) == "1"
-
-	p := os.Getenv(envPort)
-	if p != "" {
-		Port = p
-	}
-
-	ServerSMTPUser = os.Getenv(envSMTPUser)
-	ServerSMTPHost = os.Getenv(envSMTPHost)
-	ServerSMTPPort = os.Getenv(envSMTPPort)
-	ServerSMTPPass = os.Getenv(envSMTPPass)
-
-	if ServerSMTPUser == "" || ServerSMTPHost == "" || ServerSMTPPort == "" || ServerSMTPPass == "" {
-		// Handle empty credentials
-	}
-
-	ServerSecret = os.Getenv(envServerSecret)
-
-	if ServerSecret == "" {
-		ServerSecret = generateRandomSecret(32)
-	}
-
-	logLevelStr := os.Getenv(envLog)
-	if logLevelStr != "" {
-		var err error
-		l, err := strconv.Atoi(logLevelStr)
-		if err == nil {
-			LogLevel = l
+	for key := range Environment {
+		if v := os.Getenv(key); v != "" {
+			Environment[key] = v
 		}
 	}
-
-	dvr := os.Getenv(envDvr)
-	if dvr != "" {
-		dbDriver = dvr
-	}
-
-	conn := os.Getenv(envCnn)
-	if conn != "" {
-		dbConn = conn
-	}
-}
-
-func generateRandomSecret(n int) string {
-	b := make([]byte, n)
-	if _, err := rand.Read(b); err != nil {
-		// never return predictable bytes
-		panic(fmt.Errorf("failed to generate random secret: %w", err))
-	}
-	return hex.EncodeToString(b)
 }

@@ -2,68 +2,29 @@
 package handlers
 
 import (
-	"database/sql"
-	"errors"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"app/i18n"
-	"app/sessions"
-	"app/utils/smtp"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Handler struct {
-	params     HandlerParams
-	Translator func(*http.Request) func(string) string
-	Sessions   *sessions.Store[string]
+	params *HandlerParams
 }
 
 type HandlerParams struct {
-	Production   bool
-	Logger       *slog.Logger
-	Database     *sql.DB
-	Locales      map[string]i18n.Locale
-	SMTPAuth     smtp.AuthParams
-	CookieName   string
-	CookiePath   string
-	ServerSecret string
+	Production     bool
+	Logger         *slog.Logger
+	Database       *pgxpool.Pool
+	TranslatorFunc i18n.HTTPTranslatorFunc
 }
 
-func New(params HandlerParams) (*Handler, error) {
-	sessions := sessions.New[string](sessions.StoreParams{
-		CookieName:     params.CookieName,
-		CookiePath:     params.CookiePath,
-		CookieSameSite: http.SameSiteStrictMode,
-		CookieTTL:      24 * time.Hour,
-		JWTSecret:      params.ServerSecret,
-	})
-
-	translator, err := i18n.New(params.Locales, "es")
-	if err != nil {
-		return nil, errors.New("bad translator params")
-	}
-	translatorFunc := translator.RequestTranslator
-
-	return &Handler{
-		params:     params,
-		Translator: translatorFunc,
-		Sessions:   sessions,
-	}, nil
+func New(params *HandlerParams) *Handler {
+	return &Handler{params}
 }
 
-func (h *Handler) Prod() bool {
-	return h.params.Production
-}
-
-func (h *Handler) DB() *sql.DB {
-	return h.params.Database
-}
-
-func (h *Handler) Log() *slog.Logger {
-	return h.params.Logger
-}
-
-func (h *Handler) SMTPClient() *smtp.Auth {
-	return smtp.Client(h.params.SMTPAuth)
+func (h *Handler) Translator(r *http.Request) func(string) string {
+	return h.params.TranslatorFunc(r)
 }
