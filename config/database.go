@@ -8,12 +8,16 @@ import (
 )
 
 func InitDB() *pgxpool.Pool {
-	pool, err := pgxpool.New(
-		context.Background(),
-		Environment[EnvConnstr],
-	)
+	ctx := context.Background()
+	connString := Environment[EnvConnstr]
+
+	pool, err := pgxpool.New(ctx, connString)
 	if err != nil {
 		panic(fmt.Sprintf("unable to create connection pool: %v", err))
+	}
+
+	if err := pool.Ping(ctx); err != nil {
+		panic(fmt.Sprintf("unable to ping connection pool: %v", err))
 	}
 
 	return pool

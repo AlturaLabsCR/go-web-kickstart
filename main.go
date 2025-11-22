@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"app/config"
@@ -30,12 +29,7 @@ func main() {
 		TranslatorFunc: tr,
 	})
 
-	routes := router.Init(handler)
-
-	if prefix := config.Environment[config.EnvRootPrefix]; prefix != "/" {
-		strippedPrefix, _ := strings.CutSuffix(prefix, "/")
-		routes.Handle(prefix, http.StripPrefix(strippedPrefix, routes))
-	}
+	routes := router.Init(handler, assetsFS)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)

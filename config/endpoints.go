@@ -3,13 +3,15 @@ package config
 type Endpoint int
 
 const (
-	AssetsPath = iota
+	RootPath = iota
+	AssetsPath
 	HomePath
 	LoginPath
 )
 
 var Endpoints = map[Endpoint]string{
-	AssetsPath: "assets/",
-	HomePath:   "home",
-	LoginPath:  "login",
+	RootPath:   "/",
+	AssetsPath: "/assets/",
+	HomePath:   "/home",
+	LoginPath:  "/login",
 }

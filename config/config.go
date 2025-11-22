@@ -12,20 +12,25 @@ const (
 )
 
 const (
-	envPrefix     = "APP_"
+	envPrefix = "APP_"
+
+	// required
+	EnvConnstr = envPrefix + "DB_CONNSTR"
+
+	// optional
 	EnvProd       = envPrefix + "PROD"
 	EnvPort       = envPrefix + "PORT"
 	EnvLog        = envPrefix + "LOG_LEVEL"
-	EnvConnstr    = envPrefix + "DB_CONNSTR"
 	EnvRootPrefix = envPrefix + "ROOT_PREFIX"
 )
 
 var Environment = map[string]string{
+	EnvConnstr: "",
+
 	EnvProd:       "0",
 	EnvPort:       "8080",
 	EnvLog:        "0",
-	EnvConnstr:    "",
-	EnvRootPrefix: "/",
+	EnvRootPrefix: "",
 }
 
 func Init() {

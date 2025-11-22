@@ -5,17 +5,33 @@ import (
 	"time"
 )
 
+type wrappedWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (w *wrappedWriter) WriteHeader(statusCode int) {
+	w.ResponseWriter.WriteHeader(statusCode)
+	w.statusCode = statusCode
+}
+
 const msgEndpointHit = "endpoint hit"
 
 func (h *Handler) LogRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		next.ServeHTTP(w, r)
-		end := time.Now()
+
+		wrapped := &wrappedWriter{
+			ResponseWriter: w,
+			statusCode:     http.StatusOK,
+		}
+
+		next.ServeHTTP(wrapped, r)
+
 		h.Log().Debug(msgEndpointHit,
-			"start", start,
-			"end", end,
 			"pattern", r.Pattern,
+			"status", wrapped.statusCode,
+			"took", time.Since(start),
 		)
 	})
 }

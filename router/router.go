@@ -2,30 +2,50 @@
 package router
 
 import (
+	"embed"
 	"net/http"
+	"strings"
 
+	"app/config"
 	"app/handlers"
+	"app/middleware"
 )
 
 type endpoint struct {
 	method  string
 	path    string
-	handler func(http.ResponseWriter, *http.Request)
+	handler http.HandlerFunc
 }
 
-func Init(h *handlers.Handler) *http.ServeMux {
-	router := http.NewServeMux()
+func Init(h *handlers.Handler, static embed.FS) http.Handler {
+	mux := http.NewServeMux()
 
-	endpoints := []endpoint{
-		{method: "", path: "", handler: nil},
+	loadRoutes(mux, loadEndpoints(h, static))
+
+	stack := middleware.Stack(
+		h.LogRequest,
+	)
+
+	return stack(mux)
+}
+
+func loadEndpoints(h *handlers.Handler, static embed.FS) []endpoint {
+	return []endpoint{
+		{
+			method: http.MethodGet,
+			path:   config.Endpoints[config.AssetsPath],
+			handler: h.CachePolicy(handlers.MaybeGzip(
+				http.FileServer(http.FS(static)),
+			)),
+		},
+		{
+			path:    config.Endpoints[config.RootPath],
+			handler: h.Home,
+		},
 	}
-
-	loadRoutes(router, endpoints)
-
-	return router
 }
 
-func loadRoutes(router *http.ServeMux, endpoints []endpoint) {
+func loadRoutes(mux *http.ServeMux, endpoints []endpoint) {
 	for _, e := range endpoints {
 		var pattern string
 		if e.method != "" {
@@ -33,6 +53,12 @@ func loadRoutes(router *http.ServeMux, endpoints []endpoint) {
 		} else {
 			pattern = e.path
 		}
-		router.HandleFunc(pattern, e.handler)
+		mux.HandleFunc(pattern, e.handler)
+	}
+
+	// global path prefix, if set
+	if prefix := config.Environment[config.EnvRootPrefix]; prefix != "" {
+		strippedPrefix, _ := strings.CutSuffix(prefix, "/")
+		mux.Handle(prefix, http.StripPrefix(strippedPrefix, mux))
 	}
 }
