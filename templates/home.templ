@@ -2,16 +2,12 @@ package templates
 
 import "app/config"
 
+const RegisterDivID = "registerdivid"
+
 templ Home(tr func(string) string) {
 	<section>
-		<div class="container">
-			<p>templates/home.templ</p>
-			<p>{ tr("hello_world") } { tr("message") }</p>
-		</div>
-		<a href={ config.Endpoints[config.LoginPath] }>
-			<button type="button" class="border">
-				Login
-			</button>
-		</a>
+		<a class="text-blue-500" href={ config.Endpoints[config.LoginPath] }>Login</a>
+		<a class="text-blue-500" href={ config.Endpoints[config.RegisterPath] }>Register</a>
+		<p>templates/home.templ</p>
 	</section>
 }

@@ -31,6 +31,14 @@ func NewPostgres(ctx context.Context, connString string) (Database, error) {
 	}, nil
 }
 
-func (db *Postgres) InsertOwner(ctx context.Context, ownerName string) (int64, error) {
-	return db.Queries.InsertOwner(ctx, ownerName)
+func (db *Postgres) insertOwner(ctx context.Context, ownerEmail string) (int64, error) {
+	return db.Queries.InsertOwner(ctx, ownerEmail)
+}
+
+func (db *Postgres) selectOwnerEmails(ctx context.Context) ([]string, error) {
+	return db.Queries.SelectOwnerEmails(ctx)
+}
+
+func (db *Postgres) Close(ctx context.Context) {
+	db.Pool.Close()
 }

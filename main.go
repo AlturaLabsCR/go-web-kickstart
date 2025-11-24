@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"net/http"
 	"os"
@@ -42,6 +43,8 @@ func main() {
 			os.Exit(1)
 		}
 	}()
+
+	defer database.Close(context.Background())
 
 	<-stop
 

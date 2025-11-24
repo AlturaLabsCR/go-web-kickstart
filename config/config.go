@@ -43,4 +43,6 @@ func Init() {
 			Environment[key] = v
 		}
 	}
+
+	initEndpoints()
 }

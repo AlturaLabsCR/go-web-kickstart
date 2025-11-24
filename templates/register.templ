@@ -1,0 +1,27 @@
+package templates
+
+import "app/config"
+
+templ Register(tr func(string) string) {
+	<section>
+		<div id={ RegisterDivID }>
+			<p>templates/register.templ</p>
+			<input
+				data-bind:email
+				placeholder={ tr("register_email_placeholder") }
+			/>
+			<button
+				class="border"
+				disabled
+				data-indicator:_register.busy
+				data-attr:disabled="$_register.busy || !($email && $email.includes('@') && $email.split('@')[1]?.includes('.'))"
+				data-attr:aria-busy="$_register.busy && 'true'"
+				data-on:click={ "@post('" + config.Endpoints[config.RegisterPath] + "',{"+
+        "openWhenHidden: true," +
+      "})" }
+			>
+				{ tr("register_button") }
+			</button>
+		</div>
+	</section>
+}

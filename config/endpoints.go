@@ -6,14 +6,22 @@ const (
 	RootPath = iota
 	AssetsPath
 	HomePath
-	LoginPath
 	RegisterPath
+	LoginPath
 )
 
 var Endpoints = map[Endpoint]string{
 	RootPath:     "/",
 	AssetsPath:   "/assets/",
 	HomePath:     "/home",
-	LoginPath:    "/login",
 	RegisterPath: "/register",
+	LoginPath:    "/login",
+}
+
+func initEndpoints() {
+	if prefix := Environment[EnvRootPrefix]; prefix != "" {
+		for key := range Endpoints {
+			Endpoints[key] = prefix + Endpoints[key]
+		}
+	}
 }

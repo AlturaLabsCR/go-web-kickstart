@@ -4,7 +4,6 @@ package router
 import (
 	"embed"
 	"net/http"
-	"strings"
 
 	"app/config"
 	"app/handlers"
@@ -39,9 +38,13 @@ func loadEndpoints(h *handlers.Handler, static embed.FS) []endpoint {
 			)),
 		},
 		{
-			method:  http.MethodGet,
 			path:    config.Endpoints[config.RootPath],
 			handler: h.Home,
+		},
+		{
+			method:  http.MethodGet,
+			path:    config.Endpoints[config.RegisterPath],
+			handler: h.RegisterPage,
 		},
 		{
 			method:  http.MethodPost,
@@ -60,11 +63,5 @@ func loadRoutes(mux *http.ServeMux, endpoints []endpoint) {
 			pattern = e.path
 		}
 		mux.HandleFunc(pattern, e.handler)
-	}
-
-	// global path prefix, if set
-	if prefix := config.Environment[config.EnvRootPrefix]; prefix != "" {
-		strippedPrefix, _ := strings.CutSuffix(prefix, "/")
-		mux.Handle(prefix, http.StripPrefix(strippedPrefix, mux))
 	}
 }

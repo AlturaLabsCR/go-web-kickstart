@@ -3,7 +3,7 @@
 CREATE TABLE "owners" (
   "owner_id" BIGSERIAL PRIMARY KEY,
   "owner_created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "owner_name" VARCHAR(64) NOT NULL
+  "owner_email" VARCHAR(64) NOT NULL UNIQUE
 );
 
 CREATE TABLE "dogs" (
