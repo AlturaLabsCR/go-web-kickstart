@@ -33,11 +33,17 @@ func loadEndpoints(h *handlers.Handler, static embed.FS) []endpoint {
 		{
 			method: http.MethodGet,
 			path:   config.Endpoints[config.AssetsPath],
-			handler: h.CachePolicy(handlers.MaybeGzip(
-				http.FileServer(http.FS(static)),
-			)),
+			handler: h.CachePolicy(
+				handlers.MaybeGzip(
+					http.StripPrefix(
+						config.Environment[config.EnvRootPrefix],
+						http.FileServer(http.FS(static)),
+					),
+				),
+			),
 		},
 		{
+			method:  http.MethodGet,
 			path:    config.Endpoints[config.RootPath],
 			handler: h.Home,
 		},
