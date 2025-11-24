@@ -33,6 +33,7 @@ database/.gen: $(SQL)
 .PHONY: clean/sql
 clean/sql:
 	rm -rf database/**/db
+	rm -rf database/.gen
 
 TEMPLATES := $(wildcard templates/*.templ)
 TEMPLATES_GEN := $(TEMPLATES:.templ=_templ.go)
