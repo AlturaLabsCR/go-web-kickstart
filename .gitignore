@@ -1,4 +1,4 @@
-internal/
+database/**/db
 *_templ.go
 db.db
 app

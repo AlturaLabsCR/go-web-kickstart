@@ -4,21 +4,29 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"app/database"
 )
 
-func InitDB() *pgxpool.Pool {
+func InitDB() *database.Database {
 	ctx := context.Background()
-	connString := Environment[EnvConnstr]
+	connDriver := Environment[EnvDriver]
+	connString := Environment[EnvConnStr]
 
-	pool, err := pgxpool.New(ctx, connString)
+	var conn database.Database
+	var err error
+
+	switch connDriver {
+	case "sqlite":
+		conn, err = database.NewSqlite(connString)
+	case "postgres":
+		conn, err = database.NewPostgres(ctx, connString)
+	default:
+		panic(fmt.Sprintf("invalid db driver: %s", connDriver))
+	}
+
 	if err != nil {
 		panic(fmt.Sprintf("unable to create connection pool: %v", err))
 	}
 
-	if err := pool.Ping(ctx); err != nil {
-		panic(fmt.Sprintf("unable to ping connection pool: %v", err))
-	}
-
-	return pool
+	return &conn
 }

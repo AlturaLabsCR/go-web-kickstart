@@ -24,15 +24,16 @@ GEN =
 .PHONY: all
 all: build
 
+SQLC_GEN=$(wildcard database/**/*.go)
 SQL=$(wildcard database/*.sql)
-GEN += internal/db
-internal/db: $(SQL)
-	$(GO) tool $(SQLC) generate $(LOG)
+GEN += $(SQLC_GEN)
+$(SQLC_GEN): $(SQL)
+	(cd database/ && $(GO) tool $(SQLC) generate) $(LOG)
 	@touch $@
 
 .PHONY: clean/sql
 clean/sql:
-	rm -rf internal/db
+	rm -rf database/**/db
 
 TEMPLATES := $(wildcard templates/*.templ)
 TEMPLATES_GEN := $(TEMPLATES:.templ=_templ.go)

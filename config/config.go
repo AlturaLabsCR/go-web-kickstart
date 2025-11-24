@@ -15,7 +15,8 @@ const (
 	envPrefix = "APP_"
 
 	// required
-	EnvConnstr = envPrefix + "DB_CONNSTR"
+	EnvDriver  = envPrefix + "DB_DRIVER"
+	EnvConnStr = envPrefix + "DB_CONNSTR"
 
 	// optional
 	EnvProd       = envPrefix + "PROD"
@@ -25,7 +26,7 @@ const (
 )
 
 var Environment = map[string]string{
-	EnvConnstr: "",
+	EnvConnStr: "",
 
 	EnvProd:       "0",
 	EnvPort:       "8080",

@@ -19,13 +19,13 @@ func main() {
 	config.Init()
 
 	logger := config.InitLogger()
-	pool := config.InitDB()
+	database := config.InitDB()
 	tr := config.InitTranslator()
 
 	handler := handlers.New(&handlers.HandlerParams{
 		Production:     config.Environment[config.EnvProd] == "1",
 		Logger:         logger,
-		Database:       pool,
+		Database:       database,
 		TranslatorFunc: tr,
 	})
 
