@@ -32,12 +32,12 @@ func NewSqlite(connString string) (Database, error) {
 	}, nil
 }
 
-func (db *Sqlite) insertOwner(ctx context.Context, ownerEmail string) (int64, error) {
-	return db.Queries.InsertOwner(ctx, ownerEmail)
+func (db *Sqlite) insertUser(ctx context.Context, ownerEmail string) (int64, error) {
+	return db.Queries.InsertUser(ctx, ownerEmail)
 }
 
-func (db *Sqlite) selectOwnerEmails(ctx context.Context) ([]string, error) {
-	return db.Queries.SelectOwnerEmails(ctx)
+func (db *Sqlite) selectUserEmails(ctx context.Context) ([]string, error) {
+	return db.Queries.SelectUserEmails(ctx)
 }
 
 func (db *Sqlite) Close(ctx context.Context) {

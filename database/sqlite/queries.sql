@@ -1,8 +1,8 @@
--- name: InsertOwner :one
-INSERT INTO "owners" ("owner_email") VALUES (?) RETURNING owner_id;
+-- name: InsertUser :one
+INSERT INTO "users" ("user_email") VALUES (?) RETURNING user_id;
 
--- name: SelectOwnerEmails :many
-SELECT "owner_email" FROM "owners";
+-- name: SelectUserEmails :many
+SELECT "user_email" FROM "users";
 
 -- name: InsertDog :one
 INSERT INTO "dogs" (

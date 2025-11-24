@@ -1,9 +1,9 @@
 -- DDL
 
-CREATE TABLE "owners" (
-  "owner_id" BIGSERIAL PRIMARY KEY,
-  "owner_created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "owner_email" VARCHAR(64) NOT NULL UNIQUE
+CREATE TABLE "users" (
+  "user_id" BIGSERIAL PRIMARY KEY,
+  "user_created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "user_email" VARCHAR(64) NOT NULL UNIQUE
 );
 
 CREATE TABLE "dogs" (

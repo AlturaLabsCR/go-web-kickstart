@@ -10,8 +10,8 @@ import (
 
 type Database interface {
 	Close(context.Context)
-	insertOwner(context.Context, string) (int64, error)
-	selectOwnerEmails(context.Context) ([]string, error)
+	insertUser(context.Context, string) (int64, error)
+	selectUserEmails(context.Context) ([]string, error)
 }
 
 type errStr string
@@ -24,20 +24,20 @@ const (
 	ErrDuplicateEmail = errStr("duplicate email")
 )
 
-func InsertOwner(db Database, ctx context.Context, ownerEmail string) (int64, error) {
-	ownerEmail, err := utils.ParseEmail(ownerEmail)
+func InsertUser(db Database, ctx context.Context, userEmail string) (int64, error) {
+	userEmail, err := utils.ParseEmail(userEmail)
 	if err != nil {
 		return 0, err
 	}
 
 	// TODO: Cache this
-	if registeredEmails, err := db.selectOwnerEmails(ctx); err != nil {
+	if registeredEmails, err := db.selectUserEmails(ctx); err != nil {
 		return 0, err
 	} else {
-		if slices.Contains(registeredEmails, ownerEmail) {
+		if slices.Contains(registeredEmails, userEmail) {
 			return 0, ErrDuplicateEmail
 		}
 	}
 
-	return db.insertOwner(ctx, ownerEmail)
+	return db.insertUser(ctx, userEmail)
 }

@@ -55,7 +55,7 @@ func loadEndpoints(h *handlers.Handler, static embed.FS) []endpoint {
 		{
 			method:  http.MethodPost,
 			path:    config.Endpoints[config.RegisterPath],
-			handler: h.RegisterOwner,
+			handler: h.RegisterUser,
 		},
 	}
 }

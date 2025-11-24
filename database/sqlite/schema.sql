@@ -1,9 +1,9 @@
 -- DDL
 
-CREATE TABLE "owners" (
-  "owner_id" INTEGER PRIMARY KEY,
-  "owner_created_at" INTEGER NOT NULL DEFAULT (unixepoch('now')),
-  "owner_email" VARCHAR(64) NOT NULL UNIQUE
+CREATE TABLE "users" (
+  "user_id" INTEGER PRIMARY KEY,
+  "user_created_at" INTEGER NOT NULL DEFAULT (unixepoch('now')),
+  "user_email" VARCHAR(64) NOT NULL UNIQUE
 );
 
 CREATE TABLE "dogs" (
