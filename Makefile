@@ -24,10 +24,9 @@ GEN =
 .PHONY: all
 all: build
 
-SQLC_GEN=$(wildcard database/**/*.go)
-SQL=$(wildcard database/*.sql)
-GEN += $(SQLC_GEN)
-$(SQLC_GEN): $(SQL)
+SQL=$(wildcard database/**/*.sql)
+GEN += database/.gen
+database/.gen: $(SQL)
 	(cd database/ && $(GO) tool $(SQLC) generate) $(LOG)
 	@touch $@
 
@@ -100,7 +99,7 @@ run: $(GEN)
 
 live/sql:
 	@$(GO) run $(AIR) \
-	--build.cmd "$(GO) tool $(SQLC) generate" \
+	--build.cmd "(cd database/ && $(GO) tool $(SQLC) generate)" \
 	--build.bin "/bin/true" \
 	--build.delay "100" \
 	--build.exclude_dir "" \
