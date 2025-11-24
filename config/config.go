@@ -26,7 +26,8 @@ const (
 )
 
 var Environment = map[string]string{
-	EnvConnStr: "",
+	EnvDriver:  "sqlite",
+	EnvConnStr: "./db.db",
 
 	EnvProd:       "0",
 	EnvPort:       "8080",

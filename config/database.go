@@ -7,7 +7,7 @@ import (
 	"app/database"
 )
 
-func InitDB() *database.Database {
+func InitDB() database.Database {
 	ctx := context.Background()
 	connDriver := Environment[EnvDriver]
 	connString := Environment[EnvConnStr]
@@ -28,5 +28,5 @@ func InitDB() *database.Database {
 		panic(fmt.Sprintf("unable to create connection pool: %v", err))
 	}
 
-	return &conn
+	return conn
 }

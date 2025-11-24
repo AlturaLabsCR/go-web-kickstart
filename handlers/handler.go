@@ -16,7 +16,7 @@ type Handler struct {
 type HandlerParams struct {
 	Production     bool
 	Logger         *slog.Logger
-	Database       *database.Database
+	Database       database.Database
 	TranslatorFunc i18n.HTTPTranslatorFunc
 }
 
@@ -32,7 +32,7 @@ func (h *Handler) Log() *slog.Logger {
 	return h.params.Logger
 }
 
-func (h *Handler) DB() *database.Database {
+func (h *Handler) DB() database.Database {
 	return h.params.Database
 }
 
