@@ -10,29 +10,35 @@ import (
 	"app/storage/kv"
 )
 
-type StoreParams[T any] struct {
+const (
+	AccessTokenKey = "access_token"
+	CSRFTokenKey   = "csrf_token"
+)
+
+type Session struct {
+	AccessToken string
+	CSRFToken   string
+	ExpiresAt   time.Time
+}
+
+type StoreParams struct {
 	SessionTTL time.Duration // defaults to time.Hour
-	RefreshTTL time.Duration // defaults to 24 * 30 * time.Hour
 
 	CookiePath     string        // defaults to '/'
 	CookiePrefix   string        // defaults to 'session.'
 	CookieSameSite http.SameSite // defaults tu http.SameSiteLaxMode
 
-	Store       kv.Store[T] // defaults to memory store
-	StoreSecret string      // defaults to auto-generated string
+	Store       kv.Store[Session] // defaults to memory store
+	StoreSecret string            // defaults to generated string
 }
 
-type Store[T any] struct {
-	params StoreParams[T]
+type Store struct {
+	params StoreParams
 }
 
-func NewStore[T any](params StoreParams[T]) (*Store[T], error) {
+func NewStore(params StoreParams, secure bool) (*Store, error) {
 	if params.SessionTTL == 0 {
-		params.SessionTTL = time.Hour
-	}
-
-	if params.RefreshTTL == 0 {
-		params.RefreshTTL = 24 * 30 * time.Hour
+		params.SessionTTL = 24 * 30 * time.Hour
 	}
 
 	if params.CookiePath == "" {
@@ -47,19 +53,60 @@ func NewStore[T any](params StoreParams[T]) (*Store[T], error) {
 		params.CookieSameSite = http.SameSiteLaxMode
 	}
 
-	if params.StoreSecret == "" {
-		if secret, err := generateToken(); err == nil {
-			params.StoreSecret = secret
-		} else {
-			return nil, err
-		}
-	}
-
 	if params.Store == nil {
-		params.Store = kv.NewMemoryStore[T]()
+		params.Store = kv.NewMemoryStore[Session]()
 	}
 
-	return &Store[T]{params: params}, nil
+	return &Store{params: params}, nil
+}
+
+func (s *Store) Set(w http.ResponseWriter, sessionID string) error {
+	accessToken := "my-signed-jwt-token"
+
+	csrfToken, err := generateToken()
+	if err != nil {
+		return err
+	}
+
+	expiresAt := time.Now().Add(s.params.SessionTTL)
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     s.params.CookiePrefix + AccessTokenKey,
+		Path:     s.params.CookiePath,
+		SameSite: s.params.CookieSameSite,
+		Expires:  expiresAt,
+		Value:    accessToken,
+		HttpOnly: true,
+		Secure:   true,
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     s.params.CookiePrefix + CSRFTokenKey,
+		Path:     s.params.CookiePath,
+		SameSite: s.params.CookieSameSite,
+		Expires:  expiresAt,
+		Value:    csrfToken,
+		HttpOnly: false,
+		Secure:   true,
+	})
+
+	return s.params.Store.Set(sessionID, Session{
+		AccessToken: accessToken,
+		CSRFToken:   csrfToken,
+		ExpiresAt:   expiresAt,
+	})
+}
+
+func (s *Store) Validate(r *http.Request, enforceCSRFProtection bool) error {
+	// 1. Get sessionID from JWT claims
+	// If err != nil, sessionID is known to be valid as the claims are
+	// signed by a server secret, so:
+
+	// 2. Check for enforceCSRFProtection in the *header*
+
+	// 3. If the SessionTTL has not passed, re-roll Session, else error
+
+	return nil
 }
 
 func generateToken() (string, error) {
