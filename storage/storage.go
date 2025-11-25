@@ -1,2 +1,2 @@
-// Package storage implements storage abstractions such as S3 or key-value
+// Package storage abstracts common storage solutions such as key-value or S3
 package storage

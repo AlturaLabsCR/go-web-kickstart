@@ -7,14 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	"app/storage"
+	"app/storage/kv"
 )
 
-type session struct {
-	accessToken, csrfToken string
-}
-
-type StoreParams struct {
+type StoreParams[T any] struct {
 	SessionTTL time.Duration // defaults to time.Hour
 	RefreshTTL time.Duration // defaults to 24 * 30 * time.Hour
 
@@ -22,15 +18,15 @@ type StoreParams struct {
 	CookiePrefix   string        // defaults to 'session.'
 	CookieSameSite http.SameSite // defaults tu http.SameSiteLaxMode
 
-	StoreSecret string // defaults to auto-generated string
+	Store       kv.Store[T] // defaults to memory store
+	StoreSecret string      // defaults to auto-generated string
 }
 
 type Store[T any] struct {
-	params  StoreParams
-	storage storage.KVStorage[session] // defaults to storage.KVMemory[Session]
+	params StoreParams[T]
 }
 
-func NewStore[T any](params StoreParams) (*Store[T], error) {
+func NewStore[T any](params StoreParams[T]) (*Store[T], error) {
 	if params.SessionTTL == 0 {
 		params.SessionTTL = time.Hour
 	}
@@ -59,9 +55,11 @@ func NewStore[T any](params StoreParams) (*Store[T], error) {
 		}
 	}
 
-	storage := storage.NewKVMemoryStore[session]()
+	if params.Store == nil {
+		params.Store = kv.NewMemoryStore[T]()
+	}
 
-	return &Store[T]{params: params, storage: storage}, nil
+	return &Store[T]{params: params}, nil
 }
 
 func generateToken() (string, error) {
