@@ -1,101 +1,73 @@
-// Package sessions implements typed JWT cookie sessions.
+// Package sessions handles user authorization and authentication
 package sessions
 
 import (
-	"errors"
-	"fmt"
+	"crypto/rand"
+	"encoding/base64"
 	"net/http"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
+	"app/storage"
 )
 
-// Claims holds typed session data plus standard JWT claims.
-type Claims[T any] struct {
-	Data T
-	jwt.RegisteredClaims
-}
-
-// Store handles creating and validating JWT-backed cookies.
-type Store[T any] struct {
-	params StoreParams
+type session struct {
+	accessToken, csrfToken string
 }
 
 type StoreParams struct {
-	CookieName     string
-	CookiePath     string
-	CookieSameSite http.SameSite
-	CookieTTL      time.Duration
+	SessionTTL time.Duration // defaults to time.Hour
+	RefreshTTL time.Duration // defaults to 24 * 30 * time.Hour
 
-	JWTSecret string
+	CookiePath     string        // defaults to '/'
+	CookiePrefix   string        // defaults to 'session.'
+	CookieSameSite http.SameSite // defaults tu http.SameSiteLaxMode
+
+	StoreSecret string // defaults to auto-generated string
 }
 
-// New creates a new typed session store.
-func New[T any](params StoreParams) *Store[T] {
-	return &Store[T]{params: params}
+type Store[T any] struct {
+	params  StoreParams
+	storage storage.KVStorage[session] // defaults to storage.KVMemory[Session]
 }
 
-// JWTSet creates and signs a JWT, then stores it in a secure HttpOnly cookie.
-func (s *Store[T]) JWTSet(w http.ResponseWriter, r *http.Request, data T) error {
-	expires := time.Now().Add(s.params.CookieTTL)
-
-	claims := &Claims[T]{
-		Data: data,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expires),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
+func NewStore[T any](params StoreParams) (*Store[T], error) {
+	if params.SessionTTL == 0 {
+		params.SessionTTL = time.Hour
 	}
 
-	tokenStr, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).
-		SignedString([]byte(s.params.JWTSecret))
-	if err != nil {
-		return fmt.Errorf("sign jwt: %w", err)
+	if params.RefreshTTL == 0 {
+		params.RefreshTTL = 24 * 30 * time.Hour
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     s.params.CookieName,
-		Path:     s.params.CookiePath,
-		SameSite: s.params.CookieSameSite,
-		Expires:  expires,
-		Value:    tokenStr,
-		HttpOnly: true,
-		Secure:   r.TLS != nil,
-	})
-
-	return nil
-}
-
-// JWTValidate reads and verifies the cookie, returning the typed session data.
-func (s *Store[T]) JWTValidate(r *http.Request) (T, error) {
-	var zero T // zero value of T if validation fails
-
-	cookie, err := r.Cookie(s.params.CookieName)
-	if err != nil {
-		return zero, fmt.Errorf("get cookie: %w", err)
+	if params.CookiePath == "" {
+		params.CookiePath = "/"
 	}
 
-	if !cookie.Expires.IsZero() && cookie.Expires.Before(time.Now()) {
-		return zero, fmt.Errorf("cookie expired at %v", cookie.Expires)
+	if params.CookiePrefix == "" {
+		params.CookiePrefix = "session."
 	}
 
-	token, err := jwt.ParseWithClaims(cookie.Value, &Claims[T]{}, func(token *jwt.Token) (any, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+	if params.CookieSameSite == 0 {
+		params.CookieSameSite = http.SameSiteLaxMode
+	}
+
+	if params.StoreSecret == "" {
+		if secret, err := generateToken(); err == nil {
+			params.StoreSecret = secret
+		} else {
+			return nil, err
 		}
-		return []byte(s.params.JWTSecret), nil
-	})
-	if err != nil {
-		if errors.Is(err, jwt.ErrTokenExpired) {
-			return zero, fmt.Errorf("token expired: %w", err)
-		}
-		return zero, fmt.Errorf("parse token: %w", err)
 	}
 
-	claims, ok := token.Claims.(*Claims[T])
-	if !ok || !token.Valid {
-		return zero, fmt.Errorf("invalid token claims")
-	}
+	storage := storage.NewKVMemoryStore[session]()
 
-	return claims.Data, nil
+	return &Store[T]{params: params, storage: storage}, nil
+}
+
+func generateToken() (string, error) {
+	token := make([]byte, 32)
+	if _, err := rand.Read(token); err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(token), nil
 }

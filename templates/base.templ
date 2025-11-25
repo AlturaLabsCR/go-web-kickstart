@@ -2,9 +2,7 @@ package templates
 
 import "app/config"
 
-var (
-	title = "App"
-)
+const RedirectID = "redirect"
 
 templ Base(content templ.Component) {
 	<!DOCTYPE html>
@@ -23,6 +21,7 @@ templ Base(content templ.Component) {
       -->
 			<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.6/bundles/datastar.js"></script>
 			<script src={ config.Endpoints[config.AssetsPath] + "js/index.js" }></script>
+			<div class="hidden" id={ RedirectID }></div>
 		</head>
 		<body>
 			<header>

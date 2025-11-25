@@ -3,40 +3,60 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
 	"net/http"
 
+	"app/config"
 	"app/database"
 	"app/templates"
 )
 
+func (h *Handler) RegisterPage(w http.ResponseWriter, r *http.Request) {
+	content := templates.Register(h.Translator(r))
+	templates.Base(content).Render(r.Context(), w)
+}
+
 func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	var registerRequest struct {
+	ctx := r.Context()
+	tr := h.Translator(r)
+
+	var req struct {
 		Email string `json:"email"`
 	}
 
-	data, _ := io.ReadAll(r.Body)
-	defer r.Body.Close()
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		templates.Notice(
+			templates.RegisterNoticeID,
+			templates.NoticeError,
+			tr("error"),
+			tr("register.bad_email"),
+		).Render(ctx, w)
+		return
+	}
 
-	json.Unmarshal(data, &registerRequest)
-
-	userID, err := database.InsertUser(h.DB(), r.Context(), registerRequest.Email)
-	if err != nil {
+	if _, err := database.InsertUser(
+		h.DB(),
+		r.Context(),
+		req.Email,
+	); err != nil {
 		h.Log().Error("error registering user", "error", err)
-		w.WriteHeader(http.StatusBadRequest)
+
 		if errors.Is(err, database.ErrDuplicateEmail) {
-			fmt.Fprintln(w, "user already exists")
+			templates.Notice(
+				templates.RegisterNoticeID,
+				templates.NoticeWarn,
+				tr("warn"),
+				tr("register.email_exists"),
+			).Render(ctx, w)
 		} else {
-			fmt.Fprintln(w, "error registering user")
+			templates.Notice(
+				templates.RegisterNoticeID,
+				templates.NoticeError,
+				tr("error"),
+				tr("register.bad_email"),
+			).Render(ctx, w)
 		}
 		return
 	}
 
-	fmt.Fprintln(w, "registered user", userID)
-}
-
-func (h *Handler) RegisterPage(w http.ResponseWriter, r *http.Request) {
-	content := templates.Register(h.Translator(r))
-	templates.Base(content).Render(r.Context(), w)
+	templates.Redirect(config.Endpoints[config.LoginPath]).Render(ctx, w)
 }

@@ -2,8 +2,6 @@ package templates
 
 import "app/config"
 
-const RegisterDivID = "registerdivid"
-
 templ Home(tr func(string) string) {
 	<section>
 		<a class="text-blue-500" href={ config.Endpoints[config.LoginPath] }>Login</a>

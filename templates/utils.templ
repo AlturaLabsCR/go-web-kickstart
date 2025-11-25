@@ -1,0 +1,11 @@
+package templates
+
+templ EmptyDiv(id string) {
+	<div id={ id }></div>
+}
+
+templ Redirect(href string) {
+	<div id={ RedirectID }>
+		<script>window.location.href = {{ href }}</script>
+	</div>
+}
