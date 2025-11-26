@@ -14,7 +14,7 @@ type Sqlite struct {
 	Queries *db.Queries
 }
 
-func NewSqlite(connString string) (Database, error) {
+func NewSqlite(connString string) (*Sqlite, error) {
 	conn, err := sql.Open("sqlite", connString)
 	if err != nil {
 		return nil, err
@@ -32,14 +32,10 @@ func NewSqlite(connString string) (Database, error) {
 	}, nil
 }
 
-func (db *Sqlite) insertUser(ctx context.Context, ownerEmail string) (int64, error) {
-	return db.Queries.InsertUser(ctx, ownerEmail)
+func (s *Sqlite) upsertUser(ctx context.Context, userID string) error {
+	return s.Queries.UpsertUser(ctx, userID)
 }
 
-func (db *Sqlite) selectUserEmails(ctx context.Context) ([]string, error) {
-	return db.Queries.SelectUserEmails(ctx)
-}
-
-func (db *Sqlite) Close(ctx context.Context) {
-	db.DB.Close()
+func (s *Sqlite) Close(ctx context.Context) {
+	s.DB.Close()
 }

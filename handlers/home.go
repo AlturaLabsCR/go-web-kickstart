@@ -6,7 +6,7 @@ import (
 	"app/templates"
 )
 
-func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	tr := h.Translator(r)

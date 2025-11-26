@@ -45,17 +45,7 @@ func loadEndpoints(h *handlers.Handler, static embed.FS) []endpoint {
 		{
 			method:  http.MethodGet,
 			path:    config.Endpoints[config.RootPath],
-			handler: h.Home,
-		},
-		{
-			method:  http.MethodGet,
-			path:    config.Endpoints[config.RegisterPath],
-			handler: h.RegisterPage,
-		},
-		{
-			method:  http.MethodPost,
-			path:    config.Endpoints[config.RegisterPath],
-			handler: h.RegisterUser,
+			handler: h.HomePage,
 		},
 		{
 			method:  http.MethodGet,
@@ -66,6 +56,11 @@ func loadEndpoints(h *handlers.Handler, static embed.FS) []endpoint {
 			method:  http.MethodPost,
 			path:    config.Endpoints[config.LoginPath],
 			handler: h.LoginUser,
+		},
+		{
+			method:  http.MethodGet,
+			path:    config.Endpoints[config.ProtectedPath],
+			handler: h.Validate(h.ProtectedPage),
 		},
 	}
 }

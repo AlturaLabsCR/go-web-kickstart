@@ -1,11 +1,26 @@
--- name: InsertUser :one
-INSERT INTO "users" ("user_email") VALUES ($1) RETURNING user_id;
+-- name: UpsertSession :exec
+INSERT INTO "sessions" (
+  "session_id",
+  "session_user",
+  "session_last_used_at",
+  "session_csrf_token"
+) VALUES (
+  $1,
+  $2,
+  CURRENT_TIMESTAMP,
+  $3
+) ON CONFLICT ("session_id") DO UPDATE SET
+  "session_last_used_at" = EXCLUDED."session_last_used_at",
+  "session_csrf_token" = EXCLUDED."session_csrf_token"
+;
 
--- name: SelectUserEmails :many
-SELECT "user_email" FROM "users";
+-- name: SelectSession :one
+SELECT * FROM "sessions" WHERE "session_id" = $1;
 
--- name: InsertDog :one
-INSERT INTO "dogs" (
-  "dog_name",
-  "dog_owner"
-) VALUES ($1, $2) RETURNING "dog_id";
+-- name: DeleteSession :exec
+DELETE FROM "sessions" WHERE "session_id" = $1;
+
+-- name: UpsertUser :exec
+INSERT INTO "users" ("user_id")
+VALUES ($1)
+ON CONFLICT DO NOTHING;

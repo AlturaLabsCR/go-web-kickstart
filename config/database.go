@@ -5,28 +5,40 @@ import (
 	"fmt"
 
 	"app/database"
+	"app/sessions"
+	"app/storage/kv"
 )
 
-func InitDB() database.Database {
+func InitDB() (database.Database, kv.Store[sessions.Session]) {
 	ctx := context.Background()
 	connDriver := Environment[EnvDriver]
 	connString := Environment[EnvConnStr]
 
 	var conn database.Database
-	var err error
+	var store kv.Store[sessions.Session]
 
 	switch connDriver {
 	case "sqlite":
-		conn, err = database.NewSqlite(connString)
+		sqlite, err := database.NewSqlite(connString)
+		if err != nil {
+			panic(fmt.Sprintf("unable to create sqlite connection: %v", err))
+		}
+		sqlitekv := database.NewSqliteSessionStore(sqlite)
+
+		conn = sqlite
+		store = sqlitekv
 	case "postgres":
-		conn, err = database.NewPostgres(ctx, connString)
+		pg, err := database.NewPostgres(ctx, connString)
+		if err != nil {
+			panic(fmt.Sprintf("unable to create connection pool: %v", err))
+		}
+		pgkv := database.NewPostgresSessionStore(pg)
+
+		conn = pg
+		store = pgkv
 	default:
 		panic(fmt.Sprintf("invalid db driver: %s", connDriver))
 	}
 
-	if err != nil {
-		panic(fmt.Sprintf("unable to create connection pool: %v", err))
-	}
-
-	return conn
+	return conn, store
 }

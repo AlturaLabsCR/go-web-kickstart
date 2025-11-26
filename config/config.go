@@ -23,6 +23,7 @@ const (
 	EnvPort       = envPrefix + "PORT"
 	EnvLog        = envPrefix + "LOG_LEVEL"
 	EnvRootPrefix = envPrefix + "ROOT_PREFIX"
+	EnvSecret     = envPrefix + "SECRET"
 )
 
 var Environment = map[string]string{
@@ -33,6 +34,7 @@ var Environment = map[string]string{
 	EnvPort:       "8080",
 	EnvLog:        "0",
 	EnvRootPrefix: "",
+	EnvSecret:     "",
 }
 
 func Init() {

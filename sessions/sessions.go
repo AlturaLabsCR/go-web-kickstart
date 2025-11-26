@@ -2,8 +2,10 @@
 package sessions
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -13,16 +15,18 @@ import (
 const (
 	AccessTokenKey = "access_token"
 	CSRFTokenKey   = "csrf_token"
+	CSRFHeaderKey  = "X-CSRF-Token"
 )
 
 type Session struct {
-	AccessToken string
+	SessionUser string
 	CSRFToken   string
-	ExpiresAt   time.Time
+	CreatedAt   time.Time
+	LastUsedAt  time.Time
 }
 
 type StoreParams struct {
-	SessionTTL time.Duration // defaults to time.Hour
+	SessionTTL time.Duration // defaults to 24 * 30 * time.Hour
 
 	CookiePath     string        // defaults to '/'
 	CookiePrefix   string        // defaults to 'session.'
@@ -32,11 +36,11 @@ type StoreParams struct {
 	StoreSecret string            // defaults to generated string
 }
 
-type Store struct {
+type Store[T any] struct {
 	params StoreParams
 }
 
-func NewStore(params StoreParams, secure bool) (*Store, error) {
+func NewStore[T any](params StoreParams, secure bool) (*Store[T], error) {
 	if params.SessionTTL == 0 {
 		params.SessionTTL = 24 * 30 * time.Hour
 	}
@@ -57,56 +61,133 @@ func NewStore(params StoreParams, secure bool) (*Store, error) {
 		params.Store = kv.NewMemoryStore[Session]()
 	}
 
-	return &Store{params: params}, nil
+	if params.StoreSecret == "" {
+		s, err := generateToken()
+		if err != nil {
+			return nil, err
+		}
+		params.StoreSecret = s
+	}
+
+	return &Store[T]{params: params}, nil
 }
 
-func (s *Store) Set(w http.ResponseWriter, sessionID string) error {
-	accessToken := "my-signed-jwt-token"
-
-	csrfToken, err := generateToken()
+func (s *Store[T]) Set(ctx context.Context, w http.ResponseWriter, sessionUser string, sessionData T) error {
+	sessionID, err := generateToken()
 	if err != nil {
 		return err
 	}
 
-	expiresAt := time.Now().Add(s.params.SessionTTL)
+	if _, err := s.refreshAccessTokenCookie(w, sessionID, sessionData); err != nil {
+		return err
+	}
+
+	csrfToken, err := s.refreshCSRFCookie(w)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+
+	return s.params.Store.Set(ctx, sessionID, Session{
+		SessionUser: sessionUser,
+		CSRFToken:   csrfToken,
+		CreatedAt:   now,
+		LastUsedAt:  now,
+	})
+}
+
+func (s *Store[T]) refresh(w http.ResponseWriter, r *http.Request, claims *Claims[T], session Session) error {
+	ctx := r.Context()
+
+	if _, err := s.refreshAccessTokenCookie(w, claims.SessionID, claims.SessionData); err != nil {
+		return err
+	}
+
+	csrfToken, err := s.refreshCSRFCookie(w)
+	if err != nil {
+		return err
+	}
+
+	return s.params.Store.Set(ctx, claims.SessionID, Session{
+		SessionUser: session.SessionUser,
+		CSRFToken:   csrfToken,
+		CreatedAt:   session.CreatedAt,
+		LastUsedAt:  time.Now(),
+	})
+}
+
+func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (T, error) {
+	ctx := r.Context()
+	var empty T
+
+	cookie, err := r.Cookie(s.params.CookiePrefix + AccessTokenKey)
+	if err != nil {
+		return empty, err
+	}
+
+	claims, err := s.validateJwt(cookie.Value)
+	if err != nil {
+		return empty, err
+	}
+
+	session, err := s.params.Store.Get(ctx, claims.SessionID)
+	if err != nil {
+		return empty, err
+	}
+
+	if r.Method == http.MethodGet {
+		return claims.SessionData, nil
+	}
+
+	csrfToken := r.Header.Get(CSRFHeaderKey)
+	if csrfToken != session.CSRFToken {
+		return empty, fmt.Errorf("invalid CSRF token")
+	}
+
+	if err := s.refresh(w, r, claims, session); err != nil {
+		return empty, fmt.Errorf("failed to refresh session")
+	}
+
+	return claims.SessionData, nil
+}
+
+func (s *Store[T]) refreshAccessTokenCookie(w http.ResponseWriter, sessionID string, sessionData T) (string, error) {
+	accessToken, err := s.newJwt(sessionID, sessionData)
+	if err != nil {
+		return "", err
+	}
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     s.params.CookiePrefix + AccessTokenKey,
 		Path:     s.params.CookiePath,
 		SameSite: s.params.CookieSameSite,
-		Expires:  expiresAt,
+		Expires:  time.Now().Add(s.params.SessionTTL),
 		Value:    accessToken,
 		HttpOnly: true,
 		Secure:   true,
 	})
 
+	return accessToken, nil
+}
+
+func (s *Store[T]) refreshCSRFCookie(w http.ResponseWriter) (string, error) {
+	csrfToken, err := generateToken()
+	if err != nil {
+		return "", err
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     s.params.CookiePrefix + CSRFTokenKey,
 		Path:     s.params.CookiePath,
 		SameSite: s.params.CookieSameSite,
-		Expires:  expiresAt,
+		Expires:  time.Now().Add(s.params.SessionTTL),
 		Value:    csrfToken,
 		HttpOnly: false,
 		Secure:   true,
 	})
 
-	return s.params.Store.Set(sessionID, Session{
-		AccessToken: accessToken,
-		CSRFToken:   csrfToken,
-		ExpiresAt:   expiresAt,
-	})
-}
-
-func (s *Store) Validate(r *http.Request, enforceCSRFProtection bool) error {
-	// 1. Get sessionID from JWT claims
-	// If err != nil, sessionID is known to be valid as the claims are
-	// signed by a server secret, so:
-
-	// 2. Check for enforceCSRFProtection in the *header*
-
-	// 3. If the SessionTTL has not passed, re-roll Session, else error
-
-	return nil
+	return csrfToken, nil
 }
 
 func generateToken() (string, error) {

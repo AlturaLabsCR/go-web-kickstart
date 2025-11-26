@@ -5,8 +5,10 @@ import (
 	"log/slog"
 	"net/http"
 
+	"app/config"
 	"app/database"
 	"app/i18n"
+	"app/sessions"
 )
 
 type Handler struct {
@@ -18,6 +20,8 @@ type HandlerParams struct {
 	Logger         *slog.Logger
 	Database       database.Database
 	TranslatorFunc i18n.HTTPTranslatorFunc
+	Sessions       *sessions.Store[config.SessionData]
+	Secret         string
 }
 
 func New(params *HandlerParams) *Handler {
@@ -38,4 +42,8 @@ func (h *Handler) DB() database.Database {
 
 func (h *Handler) Translator(r *http.Request) func(string) string {
 	return h.params.TranslatorFunc(r)
+}
+
+func (h *Handler) Sessions() *sessions.Store[config.SessionData] {
+	return h.params.Sessions
 }

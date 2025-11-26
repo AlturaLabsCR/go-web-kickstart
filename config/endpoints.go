@@ -6,16 +6,16 @@ const (
 	RootPath = iota
 	AssetsPath
 	HomePath
-	RegisterPath
 	LoginPath
+	ProtectedPath
 )
 
 var Endpoints = map[Endpoint]string{
-	RootPath:     "/",
-	AssetsPath:   "/assets/",
-	HomePath:     "/home",
-	RegisterPath: "/register",
-	LoginPath:    "/login",
+	RootPath:      "/",
+	AssetsPath:    "/assets/",
+	HomePath:      "/home",
+	LoginPath:     "/login",
+	ProtectedPath: "/protected",
 }
 
 func initEndpoints() {

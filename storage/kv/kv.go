@@ -1,8 +1,10 @@
 // Package kv implements key-value storage abstractions
 package kv
 
+import "context"
+
 type Store[T any] interface {
-	Set(key string, value T) error
-	Get(key string) (T, bool)
-	Delete(key string) error
+	Set(context.Context, string, T) error
+	Get(context.Context, string) (T, error)
+	Delete(context.Context, string) error
 }
