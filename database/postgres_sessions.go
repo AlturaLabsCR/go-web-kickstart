@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -39,7 +40,7 @@ func (p *PostgresSessionStore) Get(ctx context.Context, sessionID string) (sessi
 		SessionUser: session.SessionUser,
 		CSRFToken:   session.SessionCsrfToken,
 		CreatedAt:   session.SessionCreatedAt.Time,
-		LastUsedAt:  session.SessionLastUsedAt.Time,
+		LastUsedAt:  time.Now(),
 	}, nil
 }
 

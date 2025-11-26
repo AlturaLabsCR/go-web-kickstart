@@ -38,7 +38,8 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Get session data from client (headers, request, body, etc)
 	sessionData := config.SessionData{
-		OS: "linux",
+		OS:       "linux",
+		Location: "New york",
 	}
 
 	// from now on the user is authenticated

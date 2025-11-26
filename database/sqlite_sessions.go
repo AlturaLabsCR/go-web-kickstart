@@ -39,7 +39,7 @@ func (s *SqliteSessionStore) Get(ctx context.Context, sessionID string) (session
 		SessionUser: session.SessionUser,
 		CSRFToken:   session.SessionCsrfToken,
 		CreatedAt:   time.Unix(session.SessionCreatedAt, 0),
-		LastUsedAt:  time.Unix(session.SessionLastUsedAt, 0),
+		LastUsedAt:  time.Now(),
 	}, nil
 }
 
