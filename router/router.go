@@ -53,14 +53,19 @@ func loadEndpoints(h *handlers.Handler, static embed.FS) []endpoint {
 			handler: h.LoginPage,
 		},
 		{
-			method:  http.MethodPost,
-			path:    config.Endpoints[config.LoginPath],
-			handler: h.LoginUser,
+			method:  http.MethodGet,
+			path:    config.Endpoints[config.LogoutPath],
+			handler: h.Validate(h.Logout),
 		},
 		{
 			method:  http.MethodGet,
 			path:    config.Endpoints[config.ProtectedPath],
 			handler: h.Validate(h.ProtectedPage),
+		},
+		{
+			method:  http.MethodPost,
+			path:    config.Endpoints[config.AuthWithGooglePath],
+			handler: h.LoginUserGoogle,
 		},
 	}
 }

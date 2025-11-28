@@ -12,6 +12,7 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	tr := h.Translator(r)
 
 	content := templates.Home(tr)
+	loadFrameworks := false
 
-	templates.Base(content).Render(ctx, w)
+	templates.Base(content, loadFrameworks).Render(ctx, w)
 }

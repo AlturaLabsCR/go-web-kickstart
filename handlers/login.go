@@ -3,9 +3,12 @@ package handlers
 import (
 	"net/http"
 
+	"app/auth"
 	"app/config"
 	"app/database"
 	"app/templates"
+
+	"github.com/mileusna/useragent"
 )
 
 func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
@@ -18,42 +21,44 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	content := templates.Login(tr)
+	params := templates.LoginParams{
+		GoogleClientID:       config.Environment[config.EnvGoogleClientID],
+		GoogleVerifyEndpoint: config.Endpoints[config.AuthWithGooglePath],
+	}
 
-	templates.Base(content).Render(ctx, w)
+	content := templates.Login(tr, params)
+	loadFrameworks := false
+
+	templates.Base(content, loadFrameworks).Render(ctx, w)
 }
 
-func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) LoginUserGoogle(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	tr := h.Translator(r)
 
 	// if the session is valid, redirect
 	if _, err := h.Sessions().Validate(w, r); err == nil {
-		templates.Redirect(config.Endpoints[config.ProtectedPath]).Render(ctx, w)
+		http.Redirect(w, r, config.Endpoints[config.ProtectedPath], http.StatusSeeOther)
 		return
 	}
 
-	// TODO: Validate user with oauth provider
-	sessionUser := "sample_user_id"
-
-	// TODO: Get session data from client (headers, request, body, etc)
-	sessionData := config.SessionData{
-		OS:       "linux",
-		Location: "New york",
+	sessionUser, err := auth.GetGoogleID(r, config.Environment[config.EnvGoogleClientID])
+	if err != nil {
+		h.Log().Debug("error getting sessionUser", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
-	// from now on the user is authenticated
+	// from now on the user is valid
 
-	tryLater := templates.Notice(
-		templates.LoginNoticeID,
-		templates.NoticeError,
-		tr("error"),
-		tr("try_later"),
-	)
+	ua := useragent.Parse(r.UserAgent())
+	sessionData := config.SessionData{
+		OS:   ua.OS,
+		Name: ua.Name,
+	}
 
 	if err := database.UpsertUser(h.DB(), ctx, sessionUser); err != nil {
-		h.Log().Debug("error upserting user", "error", err)
-		tryLater.Render(ctx, w)
+		h.Log().Error("error upserting user", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -63,7 +68,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		sessionData,
 	); err != nil {
 		h.Log().Debug("error setting session", "error", err)
-		tryLater.Render(ctx, w)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -73,7 +78,11 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		"sessionData", sessionData,
 	)
 
-	templates.Redirect(
-		config.Endpoints[config.ProtectedPath],
-	).Render(ctx, w)
+	http.Redirect(w, r, config.Endpoints[config.ProtectedPath], http.StatusSeeOther)
+}
+
+func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	h.Sessions().Revoke(w, r)
+
+	templates.Redirect(config.Endpoints[config.LoginPath]).Render(r.Context(), w)
 }

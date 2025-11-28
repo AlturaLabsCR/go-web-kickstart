@@ -4,7 +4,7 @@ import "app/config"
 
 const RedirectID = "redirect"
 
-templ Base(content templ.Component) {
+templ Base(content templ.Component, loadFrameworks bool) {
 	<!DOCTYPE html>
 	<html>
 		<head>
@@ -19,8 +19,10 @@ templ Base(content templ.Component) {
       <link rel="icon" type="image/png" sizes="16x16" href={ config.Assets + "favicon/favicon-16x16.png" }/>
       <link rel="manifest" href={ config.Assets + "manifest.json" }/>
       -->
-			<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.6/bundles/datastar.js"></script>
-			<script src={ config.Endpoints[config.AssetsPath] + "js/index.js" }></script>
+			if loadFrameworks {
+				<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.6/bundles/datastar.js" async></script>
+				<script src={ config.Endpoints[config.AssetsPath] + "js/index.js" } async></script>
+			}
 			<div class="hidden" id={ RedirectID }></div>
 		</head>
 		<body>

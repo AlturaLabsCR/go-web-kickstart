@@ -24,6 +24,8 @@ const (
 	EnvLog        = envPrefix + "LOG_LEVEL"
 	EnvRootPrefix = envPrefix + "ROOT_PREFIX"
 	EnvSecret     = envPrefix + "SECRET"
+
+	EnvGoogleClientID = envPrefix + "GOOGLE_CLIENT_ID"
 )
 
 var Environment = map[string]string{
@@ -35,6 +37,8 @@ var Environment = map[string]string{
 	EnvLog:        "0",
 	EnvRootPrefix: "",
 	EnvSecret:     "",
+
+	EnvGoogleClientID: "",
 }
 
 func Init() {

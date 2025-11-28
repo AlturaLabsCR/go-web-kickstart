@@ -149,6 +149,40 @@ func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (T, error) {
 	return claims.SessionData, nil
 }
 
+func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
+	cookie, err := r.Cookie(s.params.CookiePrefix + AccessTokenKey)
+	if err != nil {
+		return err
+	}
+
+	claims, err := s.validateJwt(cookie.Value)
+	if err != nil {
+		return err
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     s.params.CookiePrefix + AccessTokenKey,
+		Path:     s.params.CookiePath,
+		SameSite: s.params.CookieSameSite,
+		Expires:  time.Time{},
+		Value:    "",
+		HttpOnly: true,
+		Secure:   true,
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     s.params.CookiePrefix + CSRFTokenKey,
+		Path:     s.params.CookiePath,
+		SameSite: s.params.CookieSameSite,
+		Expires:  time.Time{},
+		Value:    "",
+		HttpOnly: false,
+		Secure:   true,
+	})
+
+	return s.params.Store.Delete(r.Context(), claims.SessionID)
+}
+
 func (s *Store[T]) refreshAccessTokenCookie(w http.ResponseWriter, sessionID string, sessionData T) (string, error) {
 	accessToken, err := s.newJwt(sessionID, sessionData)
 	if err != nil {

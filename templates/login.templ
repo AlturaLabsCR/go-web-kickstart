@@ -1,31 +1,52 @@
 package templates
 
-import "app/config"
-
 const (
 	LoginDivID    = "login-div-id"
 	LoginNoticeID = "login-notice-id"
 )
 
-templ Login(tr func(string) string) {
+type LoginParams struct {
+	GoogleClientID       string
+	GoogleVerifyEndpoint string
+}
+
+templ Login(tr func(string) string, params LoginParams) {
 	<div id={ LoginDivID }>
 		<div class="hidden" id={ LoginNoticeID }></div>
 		<p>templates/login.templ</p>
-		<input
-			data-bind:email
-			placeholder={ tr("login.email_placeholder") }
-		/>
-		<button
-			class="border"
-			disabled
-			data-indicator:_login.busy
-			data-attr:disabled="$_login.busy || !($email && $email.includes('@') && $email.split('@')[1]?.includes('.'))"
-			data-attr:aria-busy="$_login.busy && 'true'"
-			data-on:click={ "@post('" + config.Endpoints[config.LoginPath] + "',{"+
-        "openWhenHidden: true," +
-      "})" }
-		>
-			{ tr("login.submit") }
-		</button>
+		@loadGIS(params.GoogleClientID, params.GoogleVerifyEndpoint)
 	</div>
+}
+
+templ loadGIS(googleClientID, googleVerifyEndpoint string) {
+	<script src="https://accounts.google.com/gsi/client" async></script>
+	<script>
+    function handleCredentialResponse({ credential: token }) {
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = {{ googleVerifyEndpoint }};
+
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "token";
+      input.value = token;
+
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+    }
+  </script>
+	<div
+		id="g_id_onload"
+		data-auto_prompt="false"
+		data-callback="handleCredentialResponse"
+		data-client_id={ googleClientID }
+		class="hidden"
+	></div>
+	<div
+		class="g_id_signin"
+		data-theme="filled_black"
+		data-size="large"
+		data-shape="pill"
+	></div>
 }

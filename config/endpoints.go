@@ -7,15 +7,19 @@ const (
 	AssetsPath
 	HomePath
 	LoginPath
+	LogoutPath
 	ProtectedPath
+	AuthWithGooglePath
 )
 
 var Endpoints = map[Endpoint]string{
-	RootPath:      "/",
-	AssetsPath:    "/assets/",
-	HomePath:      "/home",
-	LoginPath:     "/login",
-	ProtectedPath: "/protected",
+	RootPath:           "/",
+	AssetsPath:         "/assets/",
+	HomePath:           "/home",
+	LoginPath:          "/login",
+	LogoutPath:         "/logout",
+	ProtectedPath:      "/protected",
+	AuthWithGooglePath: "/auth/google",
 }
 
 func initEndpoints() {

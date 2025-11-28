@@ -6,8 +6,8 @@ import (
 )
 
 type SessionData struct {
-	OS       string
-	Location string
+	OS   string
+	Name string
 }
 
 func InitSessions(store kv.Store[sessions.Session]) *sessions.Store[SessionData] {
