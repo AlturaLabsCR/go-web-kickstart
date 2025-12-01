@@ -25,7 +25,9 @@ const (
 	EnvRootPrefix = envPrefix + "ROOT_PREFIX"
 	EnvSecret     = envPrefix + "SECRET"
 
-	EnvGoogleClientID = envPrefix + "GOOGLE_CLIENT_ID"
+	EnvGoogleClientID    = envPrefix + "GOOGLE_CLIENT_ID"
+	EnvFacebookAppID     = envPrefix + "FACEBOOK_APP_ID"
+	EnvFacebookAppSecret = envPrefix + "FACEBOOK_APP_SECRET"
 )
 
 var Environment = map[string]string{
@@ -38,7 +40,9 @@ var Environment = map[string]string{
 	EnvRootPrefix: "",
 	EnvSecret:     "",
 
-	EnvGoogleClientID: "",
+	EnvGoogleClientID:    "",
+	EnvFacebookAppID:     "",
+	EnvFacebookAppSecret: "",
 }
 
 func Init() {

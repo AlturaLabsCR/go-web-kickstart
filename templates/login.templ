@@ -6,8 +6,10 @@ const (
 )
 
 type LoginParams struct {
-	GoogleClientID       string
-	GoogleVerifyEndpoint string
+	GoogleClientID         string
+	GoogleVerifyEndpoint   string
+	FacebookAppID          string
+	FacebookVerifyEndpoint string
 }
 
 templ Login(tr func(string) string, params LoginParams) {
@@ -15,38 +17,6 @@ templ Login(tr func(string) string, params LoginParams) {
 		<div class="hidden" id={ LoginNoticeID }></div>
 		<p>templates/login.templ</p>
 		@loadGIS(params.GoogleClientID, params.GoogleVerifyEndpoint)
+		@loadFacebookAuth(tr, params.FacebookAppID, params.FacebookVerifyEndpoint)
 	</div>
-}
-
-templ loadGIS(googleClientID, googleVerifyEndpoint string) {
-	<script src="https://accounts.google.com/gsi/client" async></script>
-	<script>
-    function handleCredentialResponse({ credential: token }) {
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = {{ googleVerifyEndpoint }};
-
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = "token";
-      input.value = token;
-
-      form.appendChild(input);
-      document.body.appendChild(form);
-      form.submit();
-    }
-  </script>
-	<div
-		id="g_id_onload"
-		data-auto_prompt="false"
-		data-callback="handleCredentialResponse"
-		data-client_id={ googleClientID }
-		class="hidden"
-	></div>
-	<div
-		class="g_id_signin"
-		data-theme="filled_black"
-		data-size="large"
-		data-shape="pill"
-	></div>
 }

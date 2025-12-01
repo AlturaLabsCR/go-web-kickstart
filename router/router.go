@@ -67,6 +67,11 @@ func loadEndpoints(h *handlers.Handler, static embed.FS) []endpoint {
 			path:    config.Endpoints[config.AuthWithGooglePath],
 			handler: h.LoginUserGoogle,
 		},
+		{
+			method:  http.MethodPost,
+			path:    config.Endpoints[config.AuthWithFacebookPath],
+			handler: h.LoginUserFacebook,
+		},
 	}
 }
 
