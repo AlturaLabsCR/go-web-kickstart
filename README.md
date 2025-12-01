@@ -1,7 +1,6 @@
 # Go Web Kickstart
 
-Kickstart repo for go, templ, sqlc fullstack web application.
-It also includes example tailwindcss and esbuild usage.
+Blueprint for a go, templ, sqlc fullstack web application
 
 ```sh
 make gen   # make generated files
