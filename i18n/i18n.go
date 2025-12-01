@@ -63,7 +63,7 @@ func New(locales Locales, fallback string) (*Translator, error) {
 // RequestTranslator returns a function that translates keys according to the
 // best language available for the incoming http.Request.
 func (t *Translator) RequestTranslator(r *http.Request) func(string) string {
-	reqLangs := requestLanguages(r)
+	reqLangs := RequestLanguages(r)
 	best := t.preferredLanguage(reqLangs)
 
 	return func(key string) string {
@@ -117,18 +117,18 @@ func (t *Translator) preferredLanguage(req []Language) string {
 
 // requestLanguages obtains language preferences from cookies or Accept-Language
 // header.
-func requestLanguages(r *http.Request) []Language {
+func RequestLanguages(r *http.Request) []Language {
 	if c, err := r.Cookie(langCookieKey); err == nil {
-		return parseLanguages(c.Value)
+		return ParseLanguages(c.Value)
 	}
 
 	header := r.Header.Get(langHeaderKey)
-	return parseLanguages(header)
+	return ParseLanguages(header)
 }
 
-// parseLanguages parses an Accept-Language header into a slice of Language
+// ParseLanguages parses an Accept-Language header into a slice of Language
 // objects, sorted by descending weight.
-func parseLanguages(s string) []Language {
+func ParseLanguages(s string) []Language {
 	s = strings.ReplaceAll(s, " ", "")
 	if s == "" {
 		return nil

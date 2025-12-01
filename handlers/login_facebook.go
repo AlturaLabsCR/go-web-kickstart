@@ -19,7 +19,11 @@ func (h *Handler) LoginUserFacebook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionUser, err := auth.GetFacebookID(r, config.Environment[config.EnvFacebookAppID], config.Environment[config.EnvFacebookAppSecret])
+	sessionUser, err := auth.GetFacebookID(
+		r,
+		config.Environment[config.EnvFacebookAppID],
+		config.Environment[config.EnvFacebookAppSecret],
+	)
 	if err != nil {
 		h.Log().Debug("error getting sessionUser", "error", err)
 		w.WriteHeader(http.StatusBadRequest)

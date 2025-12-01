@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const FacebookAPIVersion = "v24.0"
+
 const facebookPrefix = "fb:"
 
 func GetFacebookID(r *http.Request, appID, appSecret string) (string, error) {

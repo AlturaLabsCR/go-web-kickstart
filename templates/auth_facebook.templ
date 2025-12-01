@@ -1,8 +1,12 @@
 package templates
 
-templ loadFacebookAuth(tr func(string) string, facebookAppID, verifyEndpoint string) {
+type FacebookAuthParams struct {
+	AppID, Locale, Version, Endpoint string
+}
+
+templ loadFacebookAuth(tr func(string) string, params FacebookAuthParams) {
 	<div id="fb-root"></div>
-	<script async defer crossorigin="anonymous" src={ "https://connect.facebook.net/" + "es_LA" + "/sdk.js#xfbml=1&version=v24.0&appId=" + facebookAppID }></script>
+	<script async defer crossorigin="anonymous" src={ "https://connect.facebook.net/" + params.Locale + "/sdk.js#xfbml=1&version=" + params.Version + "&appId=" + params.AppID }></script>
 	<script>
     function handleFBLogin() {
       FB.getLoginStatus(function (res) {
@@ -20,7 +24,7 @@ templ loadFacebookAuth(tr func(string) string, facebookAppID, verifyEndpoint str
     function sendTokenToServer(token) {
       const form = document.createElement("form");
       form.method = "POST";
-      form.action = {{ verifyEndpoint }};
+      form.action = {{ params.Endpoint }};
 
       const input = document.createElement("input");
       input.type = "hidden";
