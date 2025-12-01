@@ -39,3 +39,8 @@ func (s *Sqlite) upsertUser(ctx context.Context, userID string) error {
 func (s *Sqlite) Close(ctx context.Context) {
 	s.DB.Close()
 }
+
+func (s *Sqlite) ExecSQL(ctx context.Context, sql string) error {
+	_, err := s.DB.ExecContext(ctx, sql)
+	return err
+}

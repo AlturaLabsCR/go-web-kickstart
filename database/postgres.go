@@ -38,3 +38,8 @@ func (p *Postgres) upsertUser(ctx context.Context, userID string) error {
 func (p *Postgres) Close(ctx context.Context) {
 	p.Pool.Close()
 }
+
+func (p *Postgres) ExecSQL(ctx context.Context, sql string) error {
+	_, err := p.Pool.Exec(ctx, sql)
+	return err
+}

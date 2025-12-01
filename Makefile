@@ -24,7 +24,7 @@ GEN =
 .PHONY: all
 all: build
 
-SQL=$(wildcard database/**/*.sql)
+SQL=$(wildcard database/**/migrations/*.sql)
 GEN += database/.gen
 database/.gen: $(SQL)
 	(cd database/ && $(GO) tool $(SQLC) generate) $(LOG)

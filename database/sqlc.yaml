@@ -1,7 +1,7 @@
 version: "2"
 sql:
   - engine: "postgresql"
-    schema: "postgres/schema.sql"
+    schema: "postgres/migrations"
     queries: "postgres/queries.sql"
     gen:
       go:
@@ -9,7 +9,7 @@ sql:
         out: "postgres/db"
         sql_package: "pgx/v5"
   - engine: "sqlite"
-    schema: "sqlite/schema.sql"
+    schema: "sqlite/migrations"
     queries: "sqlite/queries.sql"
     gen:
       go:

@@ -13,6 +13,12 @@ import (
 	"app/router"
 )
 
+//go:embed database/sqlite/migrations/*.sql
+var sqliteMigrations embed.FS
+
+//go:embed database/postgres/migrations/*.sql
+var postgresMigrations embed.FS
+
 //go:embed assets/*
 var assetsFS embed.FS
 
@@ -20,7 +26,11 @@ func main() {
 	config.Init()
 
 	logger := config.InitLogger()
-	database, store := config.InitDB()
+
+	database, store := config.InitDB(config.Migrations{
+		config.SqliteDriver:   sqliteMigrations,
+		config.PostgresDriver: postgresMigrations,
+	})
 
 	handler := handlers.New(&handlers.HandlerParams{
 		Production:     config.Environment[config.EnvProd] == "1",

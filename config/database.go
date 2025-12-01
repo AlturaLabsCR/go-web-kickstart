@@ -1,44 +1,111 @@
 package config
 
 import (
+	"bytes"
 	"context"
+	"embed"
 	"fmt"
+	"path"
+	"sort"
+	"strings"
 
 	"app/database"
 	"app/sessions"
 	"app/storage/kv"
 )
 
-func InitDB() (database.Database, kv.Store[sessions.Session]) {
+const (
+	SqliteDriver   = "sqlite"
+	PostgresDriver = "postgres"
+)
+
+type Migrations map[string]embed.FS
+
+func InitDB(migrations Migrations) (database.Database, kv.Store[sessions.Session]) {
 	ctx := context.Background()
 	connDriver := Environment[EnvDriver]
 	connString := Environment[EnvConnStr]
 
-	var conn database.Database
-	var store kv.Store[sessions.Session]
+	migFS, ok := migrations[connDriver]
+	if !ok {
+		panic(fmt.Sprintf("no migration folder provided for driver %q", connDriver))
+	}
+
+	var (
+		conn  database.Database
+		store kv.Store[sessions.Session]
+	)
 
 	switch connDriver {
-	case "sqlite":
+	case SqliteDriver:
 		sqlite, err := database.NewSqlite(connString)
 		if err != nil {
 			panic(fmt.Sprintf("unable to create sqlite connection: %v", err))
 		}
-		sqlitekv := database.NewSqliteSessionStore(sqlite)
+
+		runMigrations(ctx, sqlite, migFS, "database/sqlite/migrations")
 
 		conn = sqlite
-		store = sqlitekv
-	case "postgres":
+		store = database.NewSqliteSessionStore(sqlite)
+
+	case PostgresDriver:
 		pg, err := database.NewPostgres(ctx, connString)
 		if err != nil {
 			panic(fmt.Sprintf("unable to create connection pool: %v", err))
 		}
-		pgkv := database.NewPostgresSessionStore(pg)
+
+		runMigrations(ctx, pg, migFS, "database/postgres/migrations")
 
 		conn = pg
-		store = pgkv
+		store = database.NewPostgresSessionStore(pg)
+
 	default:
 		panic(fmt.Sprintf("invalid db driver: %s", connDriver))
 	}
 
 	return conn, store
+}
+
+func runMigrations(ctx context.Context, db database.Database, fsys embed.FS, folder string) {
+	entries, err := fsys.ReadDir(folder)
+	if err != nil {
+		panic(fmt.Sprintf("unable to read migrations folder %q: %v", folder, err))
+	}
+
+	if len(entries) == 0 {
+		panic(fmt.Sprintf("no migration files found in %q", folder))
+	}
+
+	var files []string
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		if strings.HasSuffix(e.Name(), ".sql") {
+			files = append(files, e.Name())
+		}
+	}
+
+	if len(files) == 0 {
+		panic(fmt.Sprintf("no .sql migration files found in %q", folder))
+	}
+
+	sort.Strings(files)
+
+	for _, fname := range files {
+		fullpath := path.Join(folder, fname)
+
+		content, err := fsys.ReadFile(fullpath)
+		if err != nil {
+			panic(fmt.Sprintf("failed to read migration %q: %v", fullpath, err))
+		}
+
+		if len(bytes.TrimSpace(content)) == 0 {
+			panic(fmt.Sprintf("migration file %q is empty", fullpath))
+		}
+
+		if err := db.ExecSQL(ctx, string(content)); err != nil {
+			panic(fmt.Sprintf("migration %q failed: %v", fname, err))
+		}
+	}
 }

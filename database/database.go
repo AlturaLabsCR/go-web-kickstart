@@ -6,6 +6,7 @@ import (
 )
 
 type Database interface {
+	ExecSQL(context.Context, string) error
 	Close(context.Context)
 	upsertUser(context.Context, string) error
 }
