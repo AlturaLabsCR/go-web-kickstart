@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const facebookPrefix = "fb:"
+
 func GetFacebookID(r *http.Request, appID, appSecret string) (string, error) {
 	var tokenResp struct {
 		Data struct {
@@ -53,5 +55,5 @@ func GetFacebookID(r *http.Request, appID, appSecret string) (string, error) {
 		return "", fmt.Errorf("token expired")
 	}
 
-	return tokenResp.Data.UserID, nil
+	return facebookPrefix + tokenResp.Data.UserID, nil
 }

@@ -25,7 +25,6 @@ func (h *Handler) LoginUserFacebook(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	sessionUser = "facebook:" + sessionUser
 
 	// from now on the user is valid
 

@@ -25,7 +25,6 @@ func (h *Handler) LoginUserGoogle(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	sessionUser = "google:" + sessionUser
 
 	// from now on the user is valid
 

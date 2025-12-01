@@ -8,6 +8,8 @@ import (
 	"google.golang.org/api/idtoken"
 )
 
+const googlePrefix = "g:"
+
 func GetGoogleID(r *http.Request, clientID string) (string, error) {
 	if err := r.ParseForm(); err != nil {
 		return "", err
@@ -27,5 +29,5 @@ func GetGoogleID(r *http.Request, clientID string) (string, error) {
 		return "", err
 	}
 
-	return payload.Subject, nil
+	return googlePrefix + payload.Subject, nil
 }
