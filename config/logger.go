@@ -16,7 +16,7 @@ func InitLogger() *slog.Logger {
 	}
 
 	logOpts := &slog.HandlerOptions{
-		AddSource: production,
+		AddSource: !production,
 		Level:     slog.Level(level),
 	}
 
