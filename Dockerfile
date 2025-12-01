@@ -5,7 +5,7 @@ FROM node:${NODE_VERSION}-alpine AS node
 
 FROM golang:${GO_VERSION}-alpine AS builder
 
-RUN apk add --no-cache git make
+RUN apk add --no-cache libstdc++ libgcc make
 
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/bin/npm /usr/local/bin/npm
