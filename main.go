@@ -29,7 +29,7 @@ func main() {
 
 	logger.Debug("configuration", "config", config.Config)
 
-	database, store := config.InitDB(config.Migrations{
+	database, sessionStore, objectStore := config.InitDB(config.Migrations{
 		config.SqliteDriver:   sqliteMigrations,
 		config.PostgresDriver: postgresMigrations,
 	})
@@ -37,8 +37,9 @@ func main() {
 	handler := handlers.New(&handlers.HandlerParams{
 		Logger:         logger,
 		Database:       database,
+		Storage:        config.InitStorage(objectStore),
 		TranslatorFunc: config.InitTranslator(),
-		Sessions:       config.InitSessions(store),
+		Sessions:       config.InitSessions(sessionStore),
 		Secret:         config.Config.App.Secret,
 	})
 

@@ -25,6 +25,7 @@ GEN =
 all: build
 
 SQL=$(wildcard database/**/migrations/*.sql)
+SQL+=$(wildcard database/**/*.sql)
 GEN += database/.gen
 database/.gen: $(SQL)
 	(cd database/ && $(GO) tool $(SQLC) generate) $(LOG)

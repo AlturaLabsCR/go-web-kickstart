@@ -5,14 +5,6 @@ import (
 	"sync"
 )
 
-type errStr string
-
-func (e errStr) Error() string {
-	return string(e)
-}
-
-const ErrNotFound = errStr("not found")
-
 type MemoryStore[T any] struct {
 	mu   sync.RWMutex
 	data map[string]T
@@ -50,4 +42,16 @@ func (m *MemoryStore[T]) Delete(_ context.Context, key string) error {
 	defer m.mu.Unlock()
 	delete(m.data, key)
 	return nil
+}
+
+func (m *MemoryStore[T]) GetElems(_ context.Context) (map[string]T, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.data, nil
+}
+
+func (m *MemoryStore[T]) Count(_ context.Context) (int64, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return int64(len(m.data)), nil
 }

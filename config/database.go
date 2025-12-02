@@ -13,6 +13,7 @@ import (
 	"app/database"
 	"app/sessions"
 	"app/storage/kv"
+	"app/storage/s3"
 )
 
 const (
@@ -25,7 +26,7 @@ const (
 
 type Migrations map[string]embed.FS
 
-func InitDB(migrations Migrations) (database.Database, kv.Store[sessions.Session]) {
+func InitDB(migrations Migrations) (database.Database, kv.Store[sessions.Session], kv.Store[s3.Object]) {
 	ctx := context.Background()
 
 	connString := Config.DB.ConnString
@@ -41,8 +42,9 @@ func InitDB(migrations Migrations) (database.Database, kv.Store[sessions.Session
 	}
 
 	var (
-		conn  database.Database
-		store kv.Store[sessions.Session]
+		conn         database.Database
+		sessionStore kv.Store[sessions.Session]
+		objectStore  kv.Store[s3.Object]
 	)
 
 	switch connDriver {
@@ -63,7 +65,8 @@ func InitDB(migrations Migrations) (database.Database, kv.Store[sessions.Session
 		runMigrations(ctx, sqlite, migFS, sqliteMigrations)
 
 		conn = sqlite
-		store = database.NewSqliteSessionStore(sqlite)
+		sessionStore = database.NewSqliteSessionStore(sqlite)
+		objectStore = database.NewSqliteObjectStore(sqlite)
 
 	case PostgresDriver:
 		pg, err := database.NewPostgres(ctx, connString)
@@ -74,13 +77,14 @@ func InitDB(migrations Migrations) (database.Database, kv.Store[sessions.Session
 		runMigrations(ctx, pg, migFS, postgresMigrations)
 
 		conn = pg
-		store = database.NewPostgresSessionStore(pg)
+		sessionStore = database.NewPostgresSessionStore(pg)
+		// objectStore = database.NewPostgresObjectStore(pg)
 
 	default:
 		panic(fmt.Sprintf("invalid db driver: %s", connDriver))
 	}
 
-	return conn, store
+	return conn, sessionStore, objectStore
 }
 
 func runMigrations(ctx context.Context, db database.Database, fsys embed.FS, folder string) {
