@@ -6,6 +6,7 @@ import (
 	"embed"
 	"fmt"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -24,7 +25,7 @@ type Migrations map[string]embed.FS
 func InitDB(migrations Migrations) (database.Database, kv.Store[sessions.Session]) {
 	ctx := context.Background()
 
-	connString := Config.App.ConnString
+	connString := Config.DB.ConnString
 
 	connDriver := SqliteDriver
 	if strings.Contains(connString, PostgresDriver) {
@@ -45,7 +46,15 @@ func InitDB(migrations Migrations) (database.Database, kv.Store[sessions.Session
 	case SqliteDriver:
 		sqlite, err := database.NewSqlite(connString)
 		if err != nil {
-			panic(fmt.Sprintf("unable to create sqlite connection: %v", err))
+			abs, errs := filepath.Abs(connString)
+			if errs != nil {
+				abs = connString
+			}
+			dir := filepath.Dir(abs)
+			panic(fmt.Sprintf(
+				"unable to create sqlite connection: %v\ncheck if the folder `%s` exists and has write permissions",
+				err, dir,
+			))
 		}
 
 		runMigrations(ctx, sqlite, migFS, "database/sqlite/migrations")

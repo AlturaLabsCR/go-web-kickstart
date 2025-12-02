@@ -13,7 +13,7 @@ import (
 const (
 	AppTitle        = "MyApp"
 	defaultPort     = "8080"
-	defaultConnStr  = "./db.db"
+	defaultConnStr  = "./data/db.db"
 	defaultLogLevel = "0"
 )
 
@@ -23,15 +23,19 @@ const (
 
 type Configuration struct {
 	App         AppConfig
+	DB          AppDatabase
 	Credentials AppCredentials
 }
 
 type AppConfig struct {
 	Port       string `env:"PORT"`
-	ConnString string `env:"DB_CONNSTR"`
 	LogLevel   string `env:"LOG_LEVEL"`
 	RootPrefix string `env:"ROOT_PREFIX"`
 	Secret     string `env:"SECRET"`
+}
+
+type AppDatabase struct {
+	ConnString string `env:"DB_CONNSTR"`
 }
 
 type AppCredentials struct {
@@ -50,9 +54,11 @@ type FacebookCredentials struct {
 
 var Config = Configuration{
 	App: AppConfig{
-		Port:       defaultPort,
+		Port:     defaultPort,
+		LogLevel: defaultLogLevel,
+	},
+	DB: AppDatabase{
 		ConnString: defaultConnStr,
-		LogLevel:   defaultLogLevel,
 	},
 }
 

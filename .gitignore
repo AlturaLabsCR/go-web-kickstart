@@ -1,7 +1,7 @@
 database/**/db
 database/.gen
 *_templ.go
-db.db
+data/
 app
 node_modules
 assets/**/*.js
