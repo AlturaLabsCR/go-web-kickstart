@@ -18,6 +18,9 @@ import (
 const (
 	SqliteDriver   = "sqlite"
 	PostgresDriver = "postgresql"
+
+	sqliteMigrations   = "database/sqlite/migrations"
+	postgresMigrations = "database/postgres/migrations"
 )
 
 type Migrations map[string]embed.FS
@@ -57,7 +60,7 @@ func InitDB(migrations Migrations) (database.Database, kv.Store[sessions.Session
 			))
 		}
 
-		runMigrations(ctx, sqlite, migFS, "database/sqlite/migrations")
+		runMigrations(ctx, sqlite, migFS, sqliteMigrations)
 
 		conn = sqlite
 		store = database.NewSqliteSessionStore(sqlite)
@@ -68,7 +71,7 @@ func InitDB(migrations Migrations) (database.Database, kv.Store[sessions.Session
 			panic(fmt.Sprintf("unable to create connection pool: %v", err))
 		}
 
-		runMigrations(ctx, pg, migFS, "database/postgres/migrations")
+		runMigrations(ctx, pg, migFS, postgresMigrations)
 
 		conn = pg
 		store = database.NewPostgresSessionStore(pg)
