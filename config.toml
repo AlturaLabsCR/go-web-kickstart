@@ -27,3 +27,12 @@ ClientID = ""
 [Credentials.Facebook]
 AppID = ""
 AppSecret = ""
+
+[Storage]
+Type="local"                # using Type="remote" requires AWS credentials, see `example.env`
+Bucket="./data/storage"     # used as bucket when Type="remote"
+#                             (for example, you would set 'mybucket')
+S3Bucket=""                 # ignored when using Type="local"
+S3PublicURL=""              # ignored when using Type="local"
+MaxObjectSize=100_000_000   # 100MB
+MaxBucketSize=1_000_000_000 # 1GB

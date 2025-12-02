@@ -5,16 +5,21 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 
 	"github.com/BurntSushi/toml"
 	"github.com/joho/godotenv"
 )
 
 const (
-	AppTitle        = "MyApp"
-	defaultPort     = "8080"
-	defaultConnStr  = "./data/db.db"
-	defaultLogLevel = "0"
+	AppTitle                   = "MyApp"
+	defaultPort                = "8080"
+	defaultConnStr             = "./data/db.db"
+	defaultLogLevel            = "0"
+	defaultStorageType         = "local"
+	defaultStoragePath         = "./data/storage"
+	defaultMaxObjectSize int64 = 0.1e9 // 100MB
+	defaultMaxBucketSize int64 = 1e9   // 1GB
 )
 
 const (
@@ -25,6 +30,7 @@ type Configuration struct {
 	App         AppConfig
 	DB          AppDatabase
 	Credentials AppCredentials
+	Storage     AppStorage
 }
 
 type AppConfig struct {
@@ -52,6 +58,13 @@ type FacebookCredentials struct {
 	AppSecret string `env:"FACEBOOK_APP_SECRET"`
 }
 
+type AppStorage struct {
+	Type          string `env:"STORAGE_TYPE"`
+	Bucket        string `env:"STORAGE_BUCKET"`
+	MaxObjectSize int64  `env:"STORAGE_MAX_OBJECT_SIZE"`
+	MaxBucketSize int64  `env:"STORAGE_MAX_BUCKET_SIZE"`
+}
+
 var Config = Configuration{
 	App: AppConfig{
 		Port:     defaultPort,
@@ -59,6 +72,12 @@ var Config = Configuration{
 	},
 	DB: AppDatabase{
 		ConnString: defaultConnStr,
+	},
+	Storage: AppStorage{
+		Type:          defaultStorageType,
+		Bucket:        defaultStoragePath,
+		MaxObjectSize: defaultMaxObjectSize,
+		MaxBucketSize: defaultMaxBucketSize,
 	},
 }
 
@@ -111,6 +130,12 @@ func overrideWithEnv(prefix string, target any) {
 		switch field.Kind() {
 		case reflect.String:
 			field.SetString(envVal)
+		case reflect.Int64:
+			val, err := strconv.ParseInt(envVal, 10, 64)
+			if err != nil {
+				panic("failed to parse int")
+			}
+			field.SetInt(val)
 		}
 	}
 }
