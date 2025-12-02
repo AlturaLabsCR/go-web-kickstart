@@ -13,10 +13,10 @@ import (
 	"app/router"
 )
 
-//go:embed database/sqlite/migrations/*.sql
+//go:embed database/sqlite/migrations/*.up.sql
 var sqliteMigrations embed.FS
 
-//go:embed database/postgres/migrations/*.sql
+//go:embed database/postgres/migrations/*.up.sql
 var postgresMigrations embed.FS
 
 //go:embed assets/*

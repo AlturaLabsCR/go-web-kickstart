@@ -1,5 +1,3 @@
--- DDL
-
 CREATE TABLE IF NOT EXISTS "users" (
   "user_id" TEXT PRIMARY KEY,
   "user_created_at" INTEGER NOT NULL DEFAULT (unixepoch('now'))
