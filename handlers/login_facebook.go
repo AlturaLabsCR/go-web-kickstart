@@ -21,8 +21,8 @@ func (h *Handler) LoginUserFacebook(w http.ResponseWriter, r *http.Request) {
 
 	sessionUser, err := auth.GetFacebookID(
 		r,
-		config.Environment[config.EnvFacebookAppID],
-		config.Environment[config.EnvFacebookAppSecret],
+		config.Config.Credentials.Facebook.AppID,
+		config.Config.Credentials.Facebook.AppSecret,
 	)
 	if err != nil {
 		h.Log().Debug("error getting sessionUser", "error", err)

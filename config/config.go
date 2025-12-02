@@ -2,57 +2,109 @@
 package config
 
 import (
+	"fmt"
 	"os"
+	"reflect"
 
+	"github.com/BurntSushi/toml"
 	"github.com/joho/godotenv"
 )
 
 const (
-	AppTitle = "MyApp"
+	AppTitle        = "MyApp"
+	defaultPort     = "8080"
+	defaultConnStr  = "./db.db"
+	defaultLogLevel = "0"
 )
 
 const (
 	envPrefix = "APP_"
-
-	// required
-	EnvDriver  = envPrefix + "DB_DRIVER"
-	EnvConnStr = envPrefix + "DB_CONNSTR"
-
-	// optional
-	EnvProd       = envPrefix + "PROD"
-	EnvPort       = envPrefix + "PORT"
-	EnvLog        = envPrefix + "LOG_LEVEL"
-	EnvRootPrefix = envPrefix + "ROOT_PREFIX"
-	EnvSecret     = envPrefix + "SECRET"
-
-	EnvGoogleClientID    = envPrefix + "GOOGLE_CLIENT_ID"
-	EnvFacebookAppID     = envPrefix + "FACEBOOK_APP_ID"
-	EnvFacebookAppSecret = envPrefix + "FACEBOOK_APP_SECRET"
 )
 
-var Environment = map[string]string{
-	EnvDriver:  "sqlite",
-	EnvConnStr: "./db.db",
+type Configuration struct {
+	App         AppConfig
+	Credentials AppCredentials
+}
 
-	EnvProd:       "0",
-	EnvPort:       "8080",
-	EnvLog:        "0",
-	EnvRootPrefix: "",
-	EnvSecret:     "",
+type AppConfig struct {
+	Port       string `env:"PORT"`
+	ConnString string `env:"DB_CONNSTR"`
+	LogLevel   string `env:"LOG_LEVEL"`
+	RootPrefix string `env:"ROOT_PREFIX"`
+	Secret     string `env:"SECRET"`
+}
 
-	EnvGoogleClientID:    "",
-	EnvFacebookAppID:     "",
-	EnvFacebookAppSecret: "",
+type AppCredentials struct {
+	Google   GoogleCredentials
+	Facebook FacebookCredentials
+}
+
+type GoogleCredentials struct {
+	ClientID string `env:"GOOGLE_CLIENT_ID"`
+}
+
+type FacebookCredentials struct {
+	AppID     string `env:"FACEBOOK_APP_ID"`
+	AppSecret string `env:"FACEBOOK_APP_SECRET"`
+}
+
+var Config = Configuration{
+	App: AppConfig{
+		Port:       defaultPort,
+		ConnString: defaultConnStr,
+		LogLevel:   defaultLogLevel,
+	},
+}
+
+var configPaths = []string{
+	"/etc/app/config.toml",
+	"./config.toml",
 }
 
 func Init() {
-	godotenv.Load()
-
-	for key := range Environment {
-		if v := os.Getenv(key); v != "" {
-			Environment[key] = v
+	for _, conf := range configPaths {
+		if data, err := os.ReadFile(conf); err == nil {
+			if _, err := toml.Decode(string(data), &Config); err != nil {
+				panic(fmt.Sprintf("error decoding config: %v", err))
+			}
+			break
 		}
 	}
 
+	godotenv.Load()
+
+	overrideWithEnv(envPrefix, &Config)
+
 	initEndpoints()
+}
+
+func overrideWithEnv(prefix string, target any) {
+	v := reflect.ValueOf(target).Elem()
+	t := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldType := t.Field(i)
+
+		if field.Kind() == reflect.Struct {
+			overrideWithEnv(prefix, field.Addr().Interface())
+			continue
+		}
+
+		tag, ok := fieldType.Tag.Lookup("env")
+		if !ok {
+			continue
+		}
+
+		envKey := prefix + tag
+		envVal, exists := os.LookupEnv(envKey)
+		if !exists || envVal == "" {
+			continue
+		}
+
+		switch field.Kind() {
+		case reflect.String:
+			field.SetString(envVal)
+		}
+	}
 }

@@ -25,7 +25,7 @@ var Endpoints = map[Endpoint]string{
 }
 
 func initEndpoints() {
-	if prefix := Environment[EnvRootPrefix]; prefix != "" {
+	if prefix := Config.App.RootPrefix; prefix != "" {
 		for key := range Endpoints {
 			Endpoints[key] = prefix + Endpoints[key]
 		}

@@ -36,7 +36,7 @@ func loadEndpoints(h *handlers.Handler, static embed.FS) []endpoint {
 			handler: h.CachePolicy(
 				handlers.MaybeGzip(
 					http.StripPrefix(
-						config.Environment[config.EnvRootPrefix],
+						config.Config.App.RootPrefix,
 						http.FileServer(http.FS(static)),
 					),
 				),

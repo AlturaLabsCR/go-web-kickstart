@@ -1,0 +1,27 @@
+# -----------
+# config.toml
+# -----------
+#
+# These are the default configuration parameters used by the app if the
+# `config.toml` file is not found
+#
+# This file is searched for in this priority
+# - /etc/app/config.toml
+# - ./config.toml
+#
+# Environment variables have precedence over any config.toml file, see
+# `example.env` for the override environment variable names
+
+[App]
+Port = "8080"          # app port, this is the docker exposed port too
+ConnString = "./db.db" # (sqlite by default)
+LogLevel = "0"         # -4:Debug 0:Info (default) 4:Warn 8:Error
+RootPrefix = ""        # set this if app requires example.com</prefix/>
+Secret = ""            # set this to persist sessions, server generated if empty
+
+[Credentials.Google]
+ClientID = ""
+
+[Credentials.Facebook]
+AppID = ""
+AppSecret = ""

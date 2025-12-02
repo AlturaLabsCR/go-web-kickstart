@@ -16,15 +16,20 @@ import (
 
 const (
 	SqliteDriver   = "sqlite"
-	PostgresDriver = "postgres"
+	PostgresDriver = "postgresql"
 )
 
 type Migrations map[string]embed.FS
 
 func InitDB(migrations Migrations) (database.Database, kv.Store[sessions.Session]) {
 	ctx := context.Background()
-	connDriver := Environment[EnvDriver]
-	connString := Environment[EnvConnStr]
+
+	connString := Config.App.ConnString
+
+	connDriver := SqliteDriver
+	if strings.Contains(connString, PostgresDriver) {
+		connDriver = PostgresDriver
+	}
 
 	migFS, ok := migrations[connDriver]
 	if !ok {

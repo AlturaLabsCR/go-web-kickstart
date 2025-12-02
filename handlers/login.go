@@ -40,10 +40,10 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := templates.LoginParams{
-		GoogleClientID:       config.Environment[config.EnvGoogleClientID],
+		GoogleClientID:       config.Config.Credentials.Google.ClientID,
 		GoogleVerifyEndpoint: config.Endpoints[config.AuthWithGooglePath],
 		FacebookAuthParams: templates.FacebookAuthParams{
-			AppID:    config.Environment[config.EnvFacebookAppID],
+			AppID:    config.Config.Credentials.Facebook.AppID,
 			Locale:   locale,
 			Version:  auth.FacebookAPIVersion,
 			Endpoint: config.Endpoints[config.AuthWithFacebookPath],

@@ -7,8 +7,7 @@ import (
 )
 
 func InitLogger() *slog.Logger {
-	production := Environment[EnvProd] == "1"
-	levelStr := Environment[EnvLog]
+	levelStr := Config.App.LogLevel
 
 	level, err := strconv.Atoi(levelStr)
 	if err != nil {
@@ -16,11 +15,11 @@ func InitLogger() *slog.Logger {
 	}
 
 	logOpts := &slog.HandlerOptions{
-		AddSource: !production,
+		AddSource: level < 0,
 		Level:     slog.Level(level),
 	}
 
-	if production {
+	if level >= 0 {
 		return slog.New(slog.NewJSONHandler(
 			os.Stdout,
 			logOpts,

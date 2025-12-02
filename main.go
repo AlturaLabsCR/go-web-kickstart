@@ -27,18 +27,19 @@ func main() {
 
 	logger := config.InitLogger()
 
+	logger.Debug("configuration", "config", config.Config)
+
 	database, store := config.InitDB(config.Migrations{
 		config.SqliteDriver:   sqliteMigrations,
 		config.PostgresDriver: postgresMigrations,
 	})
 
 	handler := handlers.New(&handlers.HandlerParams{
-		Production:     config.Environment[config.EnvProd] == "1",
 		Logger:         logger,
 		Database:       database,
 		TranslatorFunc: config.InitTranslator(),
 		Sessions:       config.InitSessions(store),
-		Secret:         config.Environment[config.EnvSecret],
+		Secret:         config.Config.App.Secret,
 	})
 
 	routes := router.Init(handler, assetsFS)
@@ -46,19 +47,20 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
+	port := config.Config.App.Port
 	go func() {
 		logger.Info(
 			"server starting",
-			"address", ":"+config.Environment[config.EnvPort],
+			"address", ":"+port,
 		)
 
 		if err := http.ListenAndServe(
-			":"+config.Environment[config.EnvPort],
+			":"+port,
 			routes,
 		); err != nil {
 			logger.Error(
 				"failed to start server",
-				"port", config.Environment[config.EnvPort],
+				"port", port,
 				"error", err,
 			)
 

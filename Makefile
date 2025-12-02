@@ -116,7 +116,7 @@ live/server: $(GEN)
 	@$(GO) run $(AIR) \
 	--build.cmd "$(GO) build -o tmp/bin/main" --build.bin "tmp/bin/main" --build.delay "100" \
 	--build.exclude_dir "node_modules" \
-	--build.include_ext "go,js,css" \
+	--build.include_ext "go,js,css,toml" \
 	--build.stop_on_error "false" \
 	--misc.clean_on_exit true \
 	--log.main_only "true" $(LIVELOG)

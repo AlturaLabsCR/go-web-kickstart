@@ -19,7 +19,7 @@ func (h *Handler) LoginUserGoogle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionUser, err := auth.GetGoogleID(r, config.Environment[config.EnvGoogleClientID])
+	sessionUser, err := auth.GetGoogleID(r, config.Config.Credentials.Google.ClientID)
 	if err != nil {
 		h.Log().Debug("error getting sessionUser", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
