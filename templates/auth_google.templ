@@ -1,8 +1,9 @@
 package templates
 
 templ loadGIS(googleClientID, googleVerifyEndpoint string) {
-	<script src="https://accounts.google.com/gsi/client" async></script>
-	<script>
+	if googleClientID != "" {
+		<script src="https://accounts.google.com/gsi/client" async></script>
+		<script>
     function handleCredentialResponse({ credential: token }) {
       const form = document.createElement("form");
       form.method = "POST";
@@ -18,17 +19,18 @@ templ loadGIS(googleClientID, googleVerifyEndpoint string) {
       form.submit();
     }
   </script>
-	<div
-		id="g_id_onload"
-		data-auto_prompt="false"
-		data-callback="handleCredentialResponse"
-		data-client_id={ googleClientID }
-		class="hidden"
-	></div>
-	<div
-		class="g_id_signin"
-		data-theme="filled_black"
-		data-size="large"
-		data-shape="pill"
-	></div>
+		<div
+			id="g_id_onload"
+			data-auto_prompt="false"
+			data-callback="handleCredentialResponse"
+			data-client_id={ googleClientID }
+			class="hidden"
+		></div>
+		<div
+			class="g_id_signin"
+			data-theme="filled_black"
+			data-size="large"
+			data-shape="pill"
+		></div>
+	}
 }
