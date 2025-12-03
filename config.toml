@@ -13,24 +13,30 @@
 # `example.env` for the override environment variable names
 
 [App]
-Port = "8080"   # app port, this is the docker exposed port too
-LogLevel = "0"  # -4:Debug 0:Info (default) 4:Warn 8:Error
-RootPrefix = "" # set this if app requires example.com</prefix/>
-Secret = ""     # set this to persist sessions, server generated if empty
+# Port = "8080"   # app port, this is the docker exposed port too
+# LogLevel = "0"  # -4:Debug 0:Info (default) 4:Warn 8:Error
+# RootPrefix = "" # set this if app requires example.com</prefix/>
+# Secret = ""     # set this to persist sessions, server generated if empty
 
 [DB]
-ConnString = "./data/db.db" # (sqlite by default)
-
-[Credentials.Google]
-ClientID = ""
-
-[Credentials.Facebook]
-AppID = ""
-AppSecret = ""
+# ConnString = "data/db.db" # (sqlite by default)
 
 [Storage]
-Type="local"                # using Type="remote" requires AWS credentials, see `example.env`
-LocalRoot="data/storage"    # used when Type="local"
-RemoteBucket=""             # used when Type="remote"
-MaxObjectSize=100_000_000   # 100MB
-MaxBucketSize=1_000_000_000 # 1GB
+# Type="local"                # using Type="remote" requires AWS credentials
+# LocalRoot="data/storage"    # used when Type="local"
+# RemoteBucket=""             # used when Type="remote"
+# MaxObjectSize=100_000_000   # 100MB
+# MaxBucketSize=1_000_000_000 # 1GB
+
+[Storage.AWS]
+# AwsRegion="auto"
+# AwsEndpointURL="https://<cliendID>.r2.cloudflarestorage.com"
+# AwsAccessKeyID=""
+# AwsSecretAccessKey=""
+
+[AuthProviders.Google]
+# ClientID = ""
+
+[AuthProviders.Facebook]
+# AppID = ""
+# AppSecret = ""

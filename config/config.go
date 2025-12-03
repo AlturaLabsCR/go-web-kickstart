@@ -27,10 +27,10 @@ const (
 )
 
 type Configuration struct {
-	App         AppConfig
-	DB          AppDatabase
-	Credentials AppCredentials
-	Storage     AppStorage
+	App           AppConfig
+	DB            AppDatabase
+	AuthProviders AppAuthProviders
+	Storage       AppStorage
 }
 
 type AppConfig struct {
@@ -44,7 +44,7 @@ type AppDatabase struct {
 	ConnString string `env:"DB_CONNSTR"`
 }
 
-type AppCredentials struct {
+type AppAuthProviders struct {
 	Google   GoogleCredentials
 	Facebook FacebookCredentials
 }
@@ -64,6 +64,14 @@ type AppStorage struct {
 	RemoteBucket  string `env:"STORAGE_BUCKET"`
 	MaxObjectSize int64  `env:"STORAGE_MAX_OBJECT_SIZE"`
 	MaxBucketSize int64  `env:"STORAGE_MAX_BUCKET_SIZE"`
+	AWS           AWSCredentials
+}
+
+type AWSCredentials struct {
+	AwsRegion          string `env:"AWS_REGION"`
+	AwsEndpointURL     string `env:"AWS_ENDPOINT_URL"`
+	AwsAccessKeyID     string `env:"AWS_ACCESS_KEY_ID"`
+	AwsSecretAccessKey string `env:"AWS_SECRET_ACCESS_KEY"`
 }
 
 var Config = Configuration{
@@ -101,6 +109,8 @@ func Init() {
 
 	overrideWithEnv(envPrefix, &Config)
 
+	overrideAWS(&Config.Storage.AWS)
+
 	initEndpoints()
 }
 
@@ -137,6 +147,28 @@ func overrideWithEnv(prefix string, target any) {
 				panic("failed to parse int")
 			}
 			field.SetInt(val)
+		}
+	}
+}
+
+func overrideAWS(target *AWSCredentials) {
+	v := reflect.ValueOf(target).Elem()
+	t := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldType := t.Field(i)
+
+		tag, ok := fieldType.Tag.Lookup("env")
+		if !ok {
+			continue
+		}
+
+		switch field.Kind() {
+		case reflect.String:
+			if val := field.String(); val != "" {
+				os.Setenv(tag, val)
+			}
 		}
 	}
 }
