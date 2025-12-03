@@ -24,9 +24,10 @@ func NewSqliteObjectStore(s *Sqlite) *SqliteObjectStore {
 func (s *SqliteObjectStore) Set(ctx context.Context, key string, data s3.Object) error {
 	return s.Queries.UpsertObject(ctx, db.UpsertObjectParams{
 		ObjectKey:    key,
-		ObjectBucket: data.ObjectBucket,
-		ObjectMime:   data.ObjectMime,
-		ObjectSize:   data.ObjectSize,
+		ObjectBucket: data.Bucket,
+		ObjectMime:   data.Mime,
+		ObjectMd5:    data.MD5,
+		ObjectSize:   data.Size,
 	})
 }
 
@@ -37,12 +38,13 @@ func (s *SqliteObjectStore) Get(ctx context.Context, key string) (s3.Object, err
 	}
 
 	return s3.Object{
-		ObjectKey:      obj.ObjectKey,
-		ObjectBucket:   obj.ObjectBucket,
-		ObjectMime:     obj.ObjectMime,
-		ObjectSize:     obj.ObjectSize,
-		ObjectCreated:  time.Unix(obj.ObjectCreated, 0),
-		ObjectModified: time.Unix(obj.ObjectModified, 0),
+		Key:      obj.ObjectKey,
+		Bucket:   obj.ObjectBucket,
+		Mime:     obj.ObjectMime,
+		MD5:      obj.ObjectMd5,
+		Size:     obj.ObjectSize,
+		Created:  time.Unix(obj.ObjectCreated, 0),
+		Modified: time.Unix(obj.ObjectModified, 0),
 	}, nil
 }
 
@@ -58,14 +60,15 @@ func (s *SqliteObjectStore) GetElems(ctx context.Context) (map[string]s3.Object,
 
 	obs := map[string]s3.Object{}
 
-	for _, ob := range dbObjects {
-		obs[ob.ObjectKey] = s3.Object{
-			ObjectKey:      ob.ObjectKey,
-			ObjectBucket:   ob.ObjectBucket,
-			ObjectMime:     ob.ObjectMime,
-			ObjectSize:     ob.ObjectSize,
-			ObjectCreated:  time.Unix(ob.ObjectCreated, 0),
-			ObjectModified: time.Unix(ob.ObjectModified, 0),
+	for _, obj := range dbObjects {
+		obs[obj.ObjectKey] = s3.Object{
+			Key:      obj.ObjectKey,
+			Bucket:   obj.ObjectBucket,
+			Mime:     obj.ObjectMime,
+			MD5:      obj.ObjectMd5,
+			Size:     obj.ObjectSize,
+			Created:  time.Unix(obj.ObjectCreated, 0),
+			Modified: time.Unix(obj.ObjectModified, 0),
 		}
 	}
 
