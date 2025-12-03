@@ -11,23 +11,28 @@ func InitStorage(store kv.Store[s3.Object]) s3.Storage {
 	var storage s3.Storage
 	var err error
 
-	if Config.Storage.Type != "remote" {
+	switch Config.Storage.Type {
+	case "local":
 		storage = s3.NewFS(s3.S3Params{
-			Bucket:        Config.Storage.LocalRoot,
-			Store:         store,
-			MaxObjectSize: Config.Storage.MaxObjectSize,
-			MaxBucketSize: Config.Storage.MaxBucketSize,
+			Bucket:         Config.Storage.Local.Root,
+			Store:          store,
+			MaxObjectSize:  Config.Storage.MaxObjectSize,
+			MaxBucketSize:  Config.Storage.MaxBucketSize,
+			PublicEndpoint: Config.Storage.Local.PublicEndpointURL,
 		})
-	} else {
+	case "remote":
 		storage, err = s3.New(s3.S3Params{
-			Bucket:        Config.Storage.RemoteBucket,
-			Store:         store,
-			MaxObjectSize: Config.Storage.MaxObjectSize,
-			MaxBucketSize: Config.Storage.MaxBucketSize,
+			Bucket:         Config.Storage.AWS.Bucket,
+			Store:          store,
+			MaxObjectSize:  Config.Storage.MaxObjectSize,
+			MaxBucketSize:  Config.Storage.MaxBucketSize,
+			PublicEndpoint: Config.Storage.AWS.PublicEndpointURL,
 		})
 		if err != nil {
 			panic("error setting up s3 client")
 		}
+	default:
+		panic("error unsupported storage type")
 	}
 
 	if err := storage.LoadCache(context.Background()); err != nil {

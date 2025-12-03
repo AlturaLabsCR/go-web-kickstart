@@ -33,7 +33,7 @@ const (
 
 type Storage interface {
 	// require read/write from/to a database
-	Put(ctx context.Context, parms PutObjectParams) error
+	Put(ctx context.Context, parms PutObjectParams) (key, publicURL string, err error)
 	Delete(ctx context.Context, key string) error
 
 	// avoids excessive API queries
@@ -61,6 +61,8 @@ type S3 struct {
 	maxObjectSize int64
 	maxBucketSize int64
 
+	publicEndpoint string
+
 	mu sync.RWMutex
 }
 
@@ -70,10 +72,11 @@ type PutObjectParams struct {
 }
 
 type S3Params struct {
-	Bucket        string
-	Store         kv.Store[Object]
-	MaxObjectSize int64
-	MaxBucketSize int64
+	Bucket         string
+	Store          kv.Store[Object]
+	MaxObjectSize  int64
+	MaxBucketSize  int64
+	PublicEndpoint string
 }
 
 func New(params S3Params) (*S3, error) {
@@ -86,17 +89,18 @@ func New(params S3Params) (*S3, error) {
 	cache := kv.NewMemoryStore[Object]()
 
 	return &S3{
-		client:        s3client,
-		bucket:        params.Bucket,
-		bucketSize:    0,
-		store:         params.Store,
-		cache:         cache,
-		maxObjectSize: params.MaxObjectSize,
-		maxBucketSize: params.MaxBucketSize,
+		client:         s3client,
+		bucket:         params.Bucket,
+		bucketSize:     0,
+		store:          params.Store,
+		cache:          cache,
+		maxObjectSize:  params.MaxObjectSize,
+		maxBucketSize:  params.MaxBucketSize,
+		publicEndpoint: params.PublicEndpoint,
 	}, nil
 }
 
-func (s *S3) Put(ctx context.Context, params PutObjectParams) error {
+func (s *S3) Put(ctx context.Context, params PutObjectParams) (key, publicURL string, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -105,11 +109,11 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) error {
 		s.maxObjectSize,
 	)
 	if err != nil {
-		return err
+		return "", "", err
 	}
 
 	if size > s.maxObjectSize {
-		return ErrTooLarge
+		return "", "", ErrTooLarge
 	}
 
 	parts := strings.Split(params.Key, "/")
@@ -136,7 +140,7 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) error {
 	object, err := s.cache.Get(ctx, params.Key)
 	if err != nil {
 		if !errors.Is(err, kv.ErrNotFound) {
-			return err
+			return "", "", err
 		}
 
 		now := time.Now()
@@ -151,7 +155,7 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) error {
 		}
 	} else {
 		if object.MD5 == md5 {
-			return nil
+			return object.Key, s.publicEndpoint + newKey, err
 		}
 
 		oldSize = object.Size
@@ -164,7 +168,7 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) error {
 
 	newSize := s.bucketSize - oldSize + size
 	if newSize > s.maxBucketSize {
-		return ErrBucketTooLarge
+		return "", "", ErrTooLarge
 	}
 
 	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{
@@ -172,15 +176,19 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) error {
 		Key:    aws.String(newKey),
 		Body:   bytes.NewReader(data),
 	}); err != nil {
-		return err
+		return "", "", err
 	}
 	s.bucketSize = newSize
 
 	if err := s.store.Set(ctx, newKey, object); err != nil {
-		return err
+		return "", "", err
 	}
 
-	return s.cache.Set(ctx, newKey, object)
+	if err := s.cache.Set(ctx, newKey, object); err != nil {
+		return "", "", err
+	}
+
+	return newKey, s.publicEndpoint + newKey, nil
 }
 
 func (s *S3) Delete(ctx context.Context, key string) error {

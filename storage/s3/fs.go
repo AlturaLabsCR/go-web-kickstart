@@ -25,22 +25,25 @@ type FileSystem struct {
 	maxObjectSize int64
 	maxBucketSize int64
 
+	publicEndpoint string
+
 	mu sync.RWMutex
 }
 
 func NewFS(params S3Params) *FileSystem {
 	cache := kv.NewMemoryStore[Object]()
 	return &FileSystem{
-		root:          params.Bucket,
-		bucketSize:    0,
-		store:         params.Store,
-		cache:         cache,
-		maxObjectSize: params.MaxObjectSize,
-		maxBucketSize: params.MaxBucketSize,
+		root:           params.Bucket,
+		bucketSize:     0,
+		store:          params.Store,
+		cache:          cache,
+		maxObjectSize:  params.MaxObjectSize,
+		maxBucketSize:  params.MaxBucketSize,
+		publicEndpoint: params.PublicEndpoint,
 	}
 }
 
-func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) error {
+func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) (key, publicURL string, err error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -49,11 +52,11 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) error {
 		fs.maxObjectSize,
 	)
 	if err != nil {
-		return err
+		return "", "", err
 	}
 
 	if size > fs.maxObjectSize {
-		return ErrTooLarge
+		return "", "", ErrTooLarge
 	}
 
 	parts := strings.Split(params.Key, "/")
@@ -80,7 +83,7 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) error {
 	object, err := fs.cache.Get(ctx, newKey)
 	if err != nil {
 		if !errors.Is(err, kv.ErrNotFound) {
-			return err
+			return "", "", err
 		}
 
 		now := time.Now()
@@ -95,7 +98,7 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) error {
 		}
 	} else {
 		if object.MD5 == md5 {
-			return nil
+			return newKey, fs.publicEndpoint + newKey, err
 		}
 
 		oldSize = object.Size
@@ -108,28 +111,32 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) error {
 
 	newSize := fs.bucketSize - oldSize + size
 	if newSize > fs.maxBucketSize {
-		return ErrBucketTooLarge
+		return "", "", ErrBucketTooLarge
 	}
 
 	path, err := fs.objectPath(newKey)
 	if err != nil {
-		return err
+		return "", "", err
 	}
 
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
+		return "", "", err
 	}
 	fs.bucketSize = newSize
 
 	if err := os.WriteFile(path, data, 0o644); err != nil {
-		return err
+		return "", "", err
 	}
 
 	if err := fs.store.Set(ctx, newKey, object); err != nil {
-		return err
+		return "", "", err
 	}
 
-	return fs.cache.Set(ctx, newKey, object)
+	if err := fs.cache.Set(ctx, newKey, object); err != nil {
+		return "", "", err
+	}
+
+	return newKey, fs.publicEndpoint + newKey, err
 }
 
 func (fs *FileSystem) Delete(ctx context.Context, key string) error {

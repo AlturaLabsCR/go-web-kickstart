@@ -13,7 +13,7 @@ type SessionData struct {
 func InitSessions(store kv.Store[sessions.Session]) *sessions.Store[SessionData] {
 	client, err := sessions.NewStore[SessionData](sessions.StoreParams{
 		Store:       store,
-		StoreSecret: Config.App.Secret,
+		StoreSecret: Config.Sessions.Secret,
 	}, true)
 	if err != nil {
 		panic("cannot start sessions client")

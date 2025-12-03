@@ -12,14 +12,14 @@ import (
 )
 
 const (
-	AppTitle                   = "MyApp"
-	defaultPort                = "8080"
-	defaultConnStr             = "data/db.db"
-	defaultLogLevel            = "0"
-	defaultStorageType         = "local"
-	defaultStoragePath         = "data/storage"
-	defaultMaxObjectSize int64 = 0.1e9 // 100MB
-	defaultMaxBucketSize int64 = 1e9   // 1GB
+	AppTitle                      = "MyApp"
+	defaultPort                   = "8080"
+	defaultConnStr                = "data/db.db"
+	defaultLogLevel               = "0"
+	defaultStorageType            = "local"
+	defaultStorageLocalRoot       = "data/storage"
+	defaultMaxObjectSize    int64 = 0.1e9 // 100MB
+	defaultMaxBucketSize    int64 = 1e9   // 1GB
 )
 
 const (
@@ -28,16 +28,16 @@ const (
 
 type Configuration struct {
 	App           AppConfig
-	DB            AppDatabase
+	Database      AppDatabase
 	AuthProviders AppAuthProviders
 	Storage       AppStorage
+	Sessions      AppSessions
 }
 
 type AppConfig struct {
 	Port       string `env:"PORT"`
 	LogLevel   string `env:"LOG_LEVEL"`
 	RootPrefix string `env:"ROOT_PREFIX"`
-	Secret     string `env:"SECRET"`
 }
 
 type AppDatabase struct {
@@ -60,18 +60,28 @@ type FacebookCredentials struct {
 
 type AppStorage struct {
 	Type          string `env:"STORAGE_TYPE"`
-	LocalRoot     string `env:"STORAGE_ROOT"`
-	RemoteBucket  string `env:"STORAGE_BUCKET"`
-	MaxObjectSize int64  `env:"STORAGE_MAX_OBJECT_SIZE"`
-	MaxBucketSize int64  `env:"STORAGE_MAX_BUCKET_SIZE"`
-	AWS           AWSCredentials
+	AWS           AWS
+	Local         Local
+	MaxObjectSize int64 `env:"STORAGE_MAX_OBJECT_SIZE"`
+	MaxBucketSize int64 `env:"STORAGE_MAX_BUCKET_SIZE"`
 }
 
-type AWSCredentials struct {
-	AwsRegion          string `env:"AWS_REGION"`
-	AwsEndpointURL     string `env:"AWS_ENDPOINT_URL"`
-	AwsAccessKeyID     string `env:"AWS_ACCESS_KEY_ID"`
-	AwsSecretAccessKey string `env:"AWS_SECRET_ACCESS_KEY"`
+type AWS struct {
+	Region            string `env:"AWS_REGION"`
+	Bucket            string `env:"AWS_BUCKET"`
+	EndpointURL       string `env:"AWS_ENDPOINT_URL"`
+	PublicEndpointURL string `env:"AWS_PUBLIC_ENDPOINT_URL"`
+	AccessKeyID       string `env:"AWS_ACCESS_KEY_ID"`
+	SecretAccessKey   string `env:"AWS_SECRET_ACCESS_KEY"`
+}
+
+type Local struct {
+	Root              string `env:"STORAGE_LOCAL_ROOT"`
+	PublicEndpointURL string `env:"STORAGE_LOCAL_PUBLIC_ENDPOINT_URL"`
+}
+
+type AppSessions struct {
+	Secret string `env:"SESSIONS_SECRET"`
 }
 
 var Config = Configuration{
@@ -79,12 +89,14 @@ var Config = Configuration{
 		Port:     defaultPort,
 		LogLevel: defaultLogLevel,
 	},
-	DB: AppDatabase{
+	Database: AppDatabase{
 		ConnString: defaultConnStr,
 	},
 	Storage: AppStorage{
-		Type:          defaultStorageType,
-		LocalRoot:     defaultStoragePath,
+		Type: defaultStorageType,
+		Local: Local{
+			Root: defaultStorageLocalRoot,
+		},
 		MaxObjectSize: defaultMaxObjectSize,
 		MaxBucketSize: defaultMaxBucketSize,
 	},
@@ -151,7 +163,7 @@ func overrideWithEnv(prefix string, target any) {
 	}
 }
 
-func overrideAWS(target *AWSCredentials) {
+func overrideAWS(target *AWS) {
 	v := reflect.ValueOf(target).Elem()
 	t := v.Type()
 

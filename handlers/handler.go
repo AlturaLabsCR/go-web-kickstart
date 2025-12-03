@@ -23,7 +23,6 @@ type HandlerParams struct {
 	Storage        s3.Storage
 	TranslatorFunc i18n.HTTPTranslatorFunc
 	Sessions       *sessions.Store[config.SessionData]
-	Secret         string
 }
 
 func New(params *HandlerParams) *Handler {

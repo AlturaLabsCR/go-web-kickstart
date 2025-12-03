@@ -29,7 +29,7 @@ type Migrations map[string]embed.FS
 func InitDB(migrations Migrations) (database.Database, kv.Store[sessions.Session], kv.Store[s3.Object]) {
 	ctx := context.Background()
 
-	connString := Config.DB.ConnString
+	connString := Config.Database.ConnString
 
 	connDriver := SqliteDriver
 	if strings.Contains(connString, PostgresDriver) {

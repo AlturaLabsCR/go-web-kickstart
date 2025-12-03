@@ -38,7 +38,6 @@ func main() {
 		Storage:        config.InitStorage(objectStore),
 		TranslatorFunc: config.InitTranslator(),
 		Sessions:       config.InitSessions(sessionStore),
-		Secret:         config.Config.App.Secret,
 	})
 
 	routes := router.Init(handler, assetsFS)
