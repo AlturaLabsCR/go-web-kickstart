@@ -33,9 +33,10 @@ func NewPostgresObjectStore(s *Postgres) *PostgresObjectStore {
 func (p *PostgresObjectStore) Set(ctx context.Context, key string, data s3.Object) error {
 	return p.Queries.UpsertObject(ctx, db.UpsertObjectParams{
 		ObjectKey:    key,
-		ObjectBucket: data.ObjectBucket,
-		ObjectMime:   data.ObjectMime,
-		ObjectSize:   data.ObjectSize,
+		ObjectBucket: data.Bucket,
+		ObjectMime:   data.Mime,
+		ObjectMd5:    data.MD5,
+		ObjectSize:   data.Size,
 	})
 }
 
@@ -46,12 +47,13 @@ func (p *PostgresObjectStore) Get(ctx context.Context, key string) (s3.Object, e
 	}
 
 	return s3.Object{
-		ObjectKey:      obj.ObjectKey,
-		ObjectBucket:   obj.ObjectBucket,
-		ObjectMime:     obj.ObjectMime,
-		ObjectSize:     obj.ObjectSize,
-		ObjectCreated:  obj.ObjectCreated.Time,
-		ObjectModified: obj.ObjectModified.Time,
+		Key:      obj.ObjectKey,
+		Bucket:   obj.ObjectBucket,
+		Mime:     obj.ObjectMime,
+		MD5:      obj.ObjectMd5,
+		Size:     obj.ObjectSize,
+		Created:  obj.ObjectCreated.Time,
+		Modified: obj.ObjectModified.Time,
 	}, nil
 }
 
@@ -67,14 +69,15 @@ func (p *PostgresObjectStore) GetElems(ctx context.Context) (map[string]s3.Objec
 
 	obs := map[string]s3.Object{}
 
-	for _, ob := range dbObjects {
-		obs[ob.ObjectKey] = s3.Object{
-			ObjectKey:      ob.ObjectKey,
-			ObjectBucket:   ob.ObjectBucket,
-			ObjectMime:     ob.ObjectMime,
-			ObjectSize:     ob.ObjectSize,
-			ObjectCreated:  ob.ObjectCreated.Time,
-			ObjectModified: ob.ObjectModified.Time,
+	for _, obj := range dbObjects {
+		obs[obj.ObjectKey] = s3.Object{
+			Key:      obj.ObjectKey,
+			Bucket:   obj.ObjectBucket,
+			Mime:     obj.ObjectMime,
+			MD5:      obj.ObjectMd5,
+			Size:     obj.ObjectSize,
+			Created:  obj.ObjectCreated.Time,
+			Modified: obj.ObjectModified.Time,
 		}
 	}
 

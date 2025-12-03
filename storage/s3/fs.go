@@ -2,9 +2,12 @@ package s3
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -53,9 +56,28 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) error {
 		return ErrTooLarge
 	}
 
+	parts := strings.Split(params.Key, "/")
+	filename := parts[len(parts)-1]
+
+	dir := strings.TrimSuffix(params.Key, filename)
+
+	parts = strings.Split(params.Key, ".")
+	ext := parts[len(parts)-1]
+
+	if len(ext) < 31 && ext != "" {
+		ext = "." + ext
+	} else {
+		ext = ""
+	}
+
+	md5sum := md5.Sum(data)
+	md5 := hex.EncodeToString(md5sum[:])
+
+	newKey := dir + md5 + ext
+
 	var oldSize int64 = 0
 
-	object, err := fs.cache.Get(ctx, params.Key)
+	object, err := fs.cache.Get(ctx, newKey)
 	if err != nil {
 		if !errors.Is(err, kv.ErrNotFound) {
 			return err
@@ -63,19 +85,25 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) error {
 
 		now := time.Now()
 		object = Object{
-			ObjectBucket:   fs.root,
-			ObjectKey:      params.Key,
-			ObjectMime:     mime,
-			ObjectSize:     size,
-			ObjectCreated:  now,
-			ObjectModified: now,
+			Bucket:   fs.root,
+			Key:      newKey,
+			Mime:     mime,
+			MD5:      md5,
+			Size:     size,
+			Created:  now,
+			Modified: now,
 		}
 	} else {
-		oldSize = object.ObjectSize
+		if object.MD5 == md5 {
+			return nil
+		}
 
-		object.ObjectMime = mime
-		object.ObjectSize = size
-		object.ObjectModified = time.Now()
+		oldSize = object.Size
+
+		object.Mime = mime
+		object.MD5 = md5
+		object.Size = size
+		object.Modified = time.Now()
 	}
 
 	newSize := fs.bucketSize - oldSize + size
@@ -83,7 +111,10 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) error {
 		return ErrBucketTooLarge
 	}
 
-	path := fs.objectPath(params.Key)
+	path, err := fs.objectPath(newKey)
+	if err != nil {
+		return err
+	}
 
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
@@ -94,11 +125,11 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) error {
 		return err
 	}
 
-	if err := fs.store.Set(ctx, params.Key, object); err != nil {
+	if err := fs.store.Set(ctx, newKey, object); err != nil {
 		return err
 	}
 
-	return fs.cache.Set(ctx, params.Key, object)
+	return fs.cache.Set(ctx, newKey, object)
 }
 
 func (fs *FileSystem) Delete(ctx context.Context, key string) error {
@@ -113,12 +144,16 @@ func (fs *FileSystem) Delete(ctx context.Context, key string) error {
 		return err
 	}
 
-	path := fs.objectPath(key)
+	path, err := fs.objectPath(key)
+	if err != nil {
+		return err
+	}
+
 	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 
-	fs.bucketSize -= object.ObjectSize
+	fs.bucketSize -= object.Size
 
 	if err := fs.store.Delete(ctx, key); err != nil {
 		return err
@@ -137,12 +172,13 @@ func (fs *FileSystem) LoadCache(ctx context.Context) error {
 		if err := fs.cache.Set(ctx, key, object); err != nil {
 			return err
 		}
-		size += object.ObjectSize
+		size += object.Size
 	}
 	fs.bucketSize = size
+
 	return nil
 }
 
-func (fs *FileSystem) objectPath(key string) string {
-	return filepath.Join(fs.root, key)
+func (fs *FileSystem) objectPath(key string) (string, error) {
+	return filepath.Abs(filepath.Join(fs.root, key))
 }
