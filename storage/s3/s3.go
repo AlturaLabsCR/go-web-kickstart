@@ -144,6 +144,7 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) error {
 			Bucket:   s.bucket,
 			Key:      newKey,
 			Mime:     mime,
+			MD5:      md5,
 			Size:     size,
 			Created:  now,
 			Modified: now,
@@ -156,6 +157,7 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) error {
 		oldSize = object.Size
 
 		object.Mime = mime
+		object.MD5 = md5
 		object.Size = size
 		object.Modified = time.Now()
 	}
