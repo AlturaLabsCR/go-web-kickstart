@@ -21,15 +21,6 @@ func NewPostgresObjectStore(s *Postgres) *PostgresObjectStore {
 	}
 }
 
-// type Object struct {
-// 	ObjectBucket   string
-// 	ObjectKey      string
-// 	ObjectMime     string
-// 	ObjectSize     int64
-// 	ObjectCreated  time.Time
-// 	ObjectModified time.Time
-// }
-
 func (p *PostgresObjectStore) Set(ctx context.Context, key string, data s3.Object) error {
 	return p.Queries.UpsertObject(ctx, db.UpsertObjectParams{
 		ObjectKey:    key,

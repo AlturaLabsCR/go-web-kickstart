@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bytes"
 	"context"
 
 	"app/storage/kv"
@@ -14,14 +13,14 @@ func InitStorage(store kv.Store[s3.Object]) s3.Storage {
 
 	if Config.Storage.Type != "remote" {
 		storage = s3.NewFS(s3.S3Params{
-			Bucket:        Config.Storage.Bucket,
+			Bucket:        Config.Storage.LocalRoot,
 			Store:         store,
 			MaxObjectSize: Config.Storage.MaxObjectSize,
 			MaxBucketSize: Config.Storage.MaxBucketSize,
 		})
 	} else {
 		storage, err = s3.New(s3.S3Params{
-			Bucket:        Config.Storage.Bucket,
+			Bucket:        Config.Storage.RemoteBucket,
 			Store:         store,
 			MaxObjectSize: Config.Storage.MaxObjectSize,
 			MaxBucketSize: Config.Storage.MaxBucketSize,
@@ -33,13 +32,6 @@ func InitStorage(store kv.Store[s3.Object]) s3.Storage {
 
 	if err := storage.LoadCache(context.Background()); err != nil {
 		panic("error loading cache")
-	}
-
-	if err := storage.Put(context.Background(), s3.PutObjectParams{
-		Key:  "sub/myfile2.txt",
-		Body: bytes.NewReader([]byte("hello, world")),
-	}); err != nil {
-		panic("error!!!")
 	}
 
 	return storage

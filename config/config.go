@@ -60,7 +60,8 @@ type FacebookCredentials struct {
 
 type AppStorage struct {
 	Type          string `env:"STORAGE_TYPE"`
-	Bucket        string `env:"STORAGE_BUCKET"`
+	LocalRoot     string `env:"STORAGE_ROOT"`
+	RemoteBucket  string `env:"STORAGE_BUCKET"`
 	MaxObjectSize int64  `env:"STORAGE_MAX_OBJECT_SIZE"`
 	MaxBucketSize int64  `env:"STORAGE_MAX_BUCKET_SIZE"`
 }
@@ -75,7 +76,7 @@ var Config = Configuration{
 	},
 	Storage: AppStorage{
 		Type:          defaultStorageType,
-		Bucket:        defaultStoragePath,
+		LocalRoot:     defaultStoragePath,
 		MaxObjectSize: defaultMaxObjectSize,
 		MaxBucketSize: defaultMaxBucketSize,
 	},

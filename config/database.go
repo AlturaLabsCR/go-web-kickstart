@@ -78,7 +78,7 @@ func InitDB(migrations Migrations) (database.Database, kv.Store[sessions.Session
 
 		conn = pg
 		sessionStore = database.NewPostgresSessionStore(pg)
-		// objectStore = database.NewPostgresObjectStore(pg)
+		objectStore = database.NewPostgresObjectStore(pg)
 
 	default:
 		panic(fmt.Sprintf("invalid db driver: %s", connDriver))
