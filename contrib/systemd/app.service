@@ -3,20 +3,11 @@ Description=App - My App
 After=syslog.target
 After=network.target
 
-#Wants=mysql.service
-#After=mysql.service
-
-#Wants=mariadb.service
-#After=mariadb.service
-
 #Wants=postgresql.service
 #After=postgresql.service
 
-#Wants=memcached.service
-#After=memcached.service
-
-#Wants=redis.service
-#After=redis.service
+#Wants=mysql.service
+#After=mysql.service
 
 [Service]
 RestartSec=2s

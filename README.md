@@ -28,8 +28,7 @@ docker compose -f docker-compose.db.yml --profile [postgres/sqlite] up
 ### Download app
 
 ```sh
-curl -L https://github.com/AlturaLabsCR/go-web-kickstart/releases/latest/download/app-amd64-linux -o /usr/local/bin/app
-
+curl -L "https://github.com/AlturaLabsCR/go-web-kickstart/releases/latest/download/app-amd64-linux" -o /usr/local/bin/app
 chmod 755 /usr/local/bin/app
 ```
 
