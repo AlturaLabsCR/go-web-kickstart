@@ -141,6 +141,9 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) (key, pub
 }
 
 func (fs *FileSystem) Get(ctx context.Context, key string) ([]byte, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	path, err := fs.objectPath(key)
 	if err != nil {
 		return nil, err

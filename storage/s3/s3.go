@@ -193,6 +193,9 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) (key, publicURL st
 }
 
 func (s *S3) Get(ctx context.Context, key string) (data []byte, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	out, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
