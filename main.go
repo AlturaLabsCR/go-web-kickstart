@@ -27,8 +27,6 @@ func main() {
 
 	logger := config.InitLogger()
 
-	logger.Debug("configuration", "config", config.Config)
-
 	database, sessionStore, objectStore := config.InitDB(config.Migrations{
 		config.SqliteDriver:   sqliteMigrations,
 		config.PostgresDriver: postgresMigrations,

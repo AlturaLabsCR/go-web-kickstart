@@ -1,3 +1,3 @@
-DROP TABLE "users";
-DROP TABLE "sessions";
 DROP TABLE "objects";
+DROP TABLE "sessions";
+DROP TABLE "users";
