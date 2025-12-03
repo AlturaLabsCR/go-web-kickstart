@@ -12,9 +12,10 @@ CREATE TABLE IF NOT EXISTS "sessions" (
 );
 
 CREATE TABLE IF NOT EXISTS "objects" (
-  "object_key" VARCHAR(255) PRIMARY KEY NOT NULL,
-  "object_bucket" VARCHAR(255) NOT NULL,
+  "object_key" VARCHAR(64) PRIMARY KEY NOT NULL,
+  "object_bucket" VARCHAR(64) NOT NULL,
   "object_mime" VARCHAR(64) NOT NULL,
+  "object_md5" VARCHAR(32) NOT NULL,
   "object_size" INTEGER NOT NULL,
   "object_created" INTEGER NOT NULL DEFAULT (unixepoch('now')),
   "object_modified" INTEGER NOT NULL DEFAULT (unixepoch('now'))

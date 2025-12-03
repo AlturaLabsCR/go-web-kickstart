@@ -28,9 +28,10 @@ INSERT INTO "objects" (
   "object_key",
   "object_bucket",
   "object_mime",
+  "object_md5",
   "object_size",
   "object_modified"
-) VALUES (?, ?, ?, ?, (unixepoch('now')))
+) VALUES (?, ?, ?, ?, ?, (unixepoch('now')))
 ON CONFLICT ("object_key") DO UPDATE SET
   "object_mime" = EXCLUDED."object_mime",
   "object_size" = EXCLUDED."object_size",

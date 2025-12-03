@@ -4,8 +4,11 @@ package s3
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -38,12 +41,13 @@ type Storage interface {
 }
 
 type Object struct {
-	ObjectBucket   string
-	ObjectKey      string
-	ObjectMime     string
-	ObjectSize     int64
-	ObjectCreated  time.Time
-	ObjectModified time.Time
+	Bucket   string
+	Key      string
+	Mime     string
+	MD5      string
+	Size     int64
+	Created  time.Time
+	Modified time.Time
 }
 
 type S3 struct {
@@ -108,6 +112,25 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) error {
 		return ErrTooLarge
 	}
 
+	parts := strings.Split(params.Key, "/")
+	filename := parts[len(parts)-1]
+
+	dir := strings.TrimSuffix(params.Key, filename)
+
+	parts = strings.Split(params.Key, ".")
+	ext := parts[len(parts)-1]
+
+	if len(ext) < 31 && ext != "" {
+		ext = "." + ext
+	} else {
+		ext = ""
+	}
+
+	md5sum := md5.Sum(data)
+	md5 := hex.EncodeToString(md5sum[:])
+
+	newKey := dir + md5 + ext
+
 	var oldSize int64 = 0
 
 	object, err := s.cache.Get(ctx, params.Key)
@@ -118,19 +141,23 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) error {
 
 		now := time.Now()
 		object = Object{
-			ObjectBucket:   s.bucket,
-			ObjectKey:      params.Key,
-			ObjectMime:     mime,
-			ObjectSize:     size,
-			ObjectCreated:  now,
-			ObjectModified: now,
+			Bucket:   s.bucket,
+			Key:      newKey,
+			Mime:     mime,
+			Size:     size,
+			Created:  now,
+			Modified: now,
 		}
 	} else {
-		oldSize = object.ObjectSize
+		if object.MD5 == md5 {
+			return nil
+		}
 
-		object.ObjectMime = mime
-		object.ObjectSize = size
-		object.ObjectModified = time.Now()
+		oldSize = object.Size
+
+		object.Mime = mime
+		object.Size = size
+		object.Modified = time.Now()
 	}
 
 	newSize := s.bucketSize - oldSize + size
@@ -140,18 +167,18 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) error {
 
 	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(s.bucket),
-		Key:    aws.String(params.Key),
+		Key:    aws.String(newKey),
 		Body:   bytes.NewReader(data),
 	}); err != nil {
 		return err
 	}
 	s.bucketSize = newSize
 
-	if err := s.store.Set(ctx, params.Key, object); err != nil {
+	if err := s.store.Set(ctx, newKey, object); err != nil {
 		return err
 	}
 
-	return s.cache.Set(ctx, params.Key, object)
+	return s.cache.Set(ctx, newKey, object)
 }
 
 func (s *S3) Delete(ctx context.Context, key string) error {
@@ -173,7 +200,7 @@ func (s *S3) Delete(ctx context.Context, key string) error {
 		return err
 	}
 
-	s.bucketSize -= object.ObjectSize
+	s.bucketSize -= object.Size
 
 	if err := s.store.Delete(ctx, key); err != nil {
 		return err
@@ -192,7 +219,7 @@ func (s *S3) LoadCache(ctx context.Context) error {
 		if err := s.cache.Set(ctx, key, object); err != nil {
 			return err
 		}
-		size += object.ObjectSize
+		size += object.Size
 	}
 	s.bucketSize = size
 	return nil
