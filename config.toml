@@ -21,7 +21,7 @@
 # Secret = "" # set this to persist sessions, server generated if empty
 
 [Database]
-# ConnString = "data/db.db" # (sqlite by default)
+# ConnString = "data/db.db" # sqlite by default, use `postgresql://...` URIs for other drivers
 
 [Storage]
 # Type="local"
@@ -32,7 +32,7 @@
 # Root="data/storage"
 # PublicEndpointURL="" # e.g. https://example.com/local_storage_handler
 
-[Storage.AWS] # Type="remote"
+[Storage.Remote] # Type="remote"
 # Region="auto"
 # Bucket=""
 # EndpointURL="https://<cliendID>.r2.cloudflarestorage.com"

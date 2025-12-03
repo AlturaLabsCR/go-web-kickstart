@@ -22,11 +22,11 @@ func InitStorage(store kv.Store[s3.Object]) s3.Storage {
 		})
 	case "remote":
 		storage, err = s3.New(s3.S3Params{
-			Bucket:         Config.Storage.AWS.Bucket,
+			Bucket:         Config.Storage.Remote.Bucket,
 			Store:          store,
 			MaxObjectSize:  Config.Storage.MaxObjectSize,
 			MaxBucketSize:  Config.Storage.MaxBucketSize,
-			PublicEndpoint: Config.Storage.AWS.PublicEndpointURL,
+			PublicEndpoint: Config.Storage.Remote.PublicEndpointURL,
 		})
 		if err != nil {
 			panic("error setting up s3 client")

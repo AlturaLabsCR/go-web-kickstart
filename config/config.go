@@ -45,22 +45,22 @@ type AppDatabase struct {
 }
 
 type AppAuthProviders struct {
-	Google   GoogleCredentials
-	Facebook FacebookCredentials
+	Google   GoogleAuthProvider
+	Facebook FacebookAuthProvider
 }
 
-type GoogleCredentials struct {
+type GoogleAuthProvider struct {
 	ClientID string `env:"GOOGLE_CLIENT_ID"`
 }
 
-type FacebookCredentials struct {
+type FacebookAuthProvider struct {
 	AppID     string `env:"FACEBOOK_APP_ID"`
 	AppSecret string `env:"FACEBOOK_APP_SECRET"`
 }
 
 type AppStorage struct {
 	Type          string `env:"STORAGE_TYPE"`
-	AWS           AWS
+	Remote        AWS
 	Local         Local
 	MaxObjectSize int64 `env:"STORAGE_MAX_OBJECT_SIZE"`
 	MaxBucketSize int64 `env:"STORAGE_MAX_BUCKET_SIZE"`
@@ -121,7 +121,7 @@ func Init() {
 
 	overrideWithEnv(envPrefix, &Config)
 
-	overrideAWS(&Config.Storage.AWS)
+	overrideAWS(&Config.Storage.Remote)
 
 	initEndpoints()
 }
