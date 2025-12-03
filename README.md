@@ -22,3 +22,44 @@ docker compose up
 # or try with a database
 docker compose -f docker-compose.db.yml --profile [postgres/sqlite] up
 ```
+
+## Install from binary
+
+### Download app
+
+```sh
+curl -L https://github.com/AlturaLabsCR/go-web-kickstart/releases/latest/download/app-amd64-linux -o /usr/local/bin/app
+
+chmod 755 /usr/local/bin/app
+```
+
+### Add user `app`
+
+```sh
+useradd -s /bin/bash -m -d /var/lib/app app
+```
+
+### App's configuration
+
+```sh
+curl -L "https://raw.githubusercontent.com/AlturaLabsCR/go-web-kickstart/refs/heads/main/config.toml" -o /etc/app/config.toml
+```
+
+### App's data (only if using sqlite or storage Type=local)
+
+```sh
+mkdir /var/lib/app/data
+chown -R app:app /var/lib/app/data
+```
+
+### Systemd service
+
+```sh
+curl -L "https://raw.githubusercontent.com/AlturaLabsCR/go-web-kickstart/refs/heads/main/contrib/systemd/app.service" -o /etc/systemd/system/app.service
+systemctl daemon-reload
+systemctl enable --now app.service
+```
+
+### Done
+
+Visit [localhost:8080](http://localhost:8080)
