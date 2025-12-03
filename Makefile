@@ -24,6 +24,12 @@ GEN =
 .PHONY: all
 all: build
 
+GEN += assets/js/datastar.js
+assets/js/datastar.js:
+	$(GO) run scripts/download.go \
+		"https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.6/bundles/datastar.js" \
+		assets/js/datastar.js
+
 SQL=$(wildcard database/**/migrations/*.sql)
 SQL+=$(wildcard database/**/*.sql)
 GEN += database/.gen

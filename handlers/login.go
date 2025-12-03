@@ -51,9 +51,15 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	content := templates.Login(tr, params)
-	loadFrameworks := false
 
-	templates.Base(content, loadFrameworks).Render(ctx, w)
+	templates.Base(content, templates.BaseTemplateParams{
+		Subtitle: tr("login.subtitle"),
+		Description: []templates.Tag{
+			{Name: "", Value: tr("login.description")},
+		},
+		LoadJS:      true,
+		RobotsIndex: true,
+	}).Render(ctx, w)
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {

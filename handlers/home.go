@@ -12,7 +12,11 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	tr := h.Translator(r)
 
 	content := templates.Home(tr)
-	loadFrameworks := false
 
-	templates.Base(content, loadFrameworks).Render(ctx, w)
+	templates.Base(content, templates.BaseTemplateParams{
+		Description: []templates.Tag{
+			{Name: "", Value: tr("home.description")},
+		},
+		RobotsIndex: true,
+	}).Render(ctx, w)
 }

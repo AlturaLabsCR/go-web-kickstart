@@ -17,9 +17,11 @@ func (h *Handler) ProtectedPage(w http.ResponseWriter, r *http.Request) {
 	tr := h.Translator(r)
 
 	content := templates.Protected(tr)
-	loadFrameworks := true
 
-	templates.Base(content, loadFrameworks).Render(ctx, w)
+	templates.Base(content, templates.BaseTemplateParams{
+		Subtitle: tr("protected.subtitle"),
+		LoadJS:   true,
+	}).Render(ctx, w)
 }
 
 func (h *Handler) Validate(next http.HandlerFunc) http.HandlerFunc {

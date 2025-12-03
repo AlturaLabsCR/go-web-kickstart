@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -137,6 +138,23 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) (key, pub
 	}
 
 	return newKey, fs.publicEndpoint + newKey, err
+}
+
+func (fs *FileSystem) Get(ctx context.Context, key string) ([]byte, error) {
+	path, err := fs.objectPath(key)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("file %q not found: %w", key, err)
+		}
+		return nil, err
+	}
+
+	return data, nil
 }
 
 func (fs *FileSystem) Delete(ctx context.Context, key string) error {

@@ -40,33 +40,30 @@ func clients(connString string, migrations Migrations) (database.Database, kv.St
 	}
 
 	switch connDriver {
-	case PostgresDriver:
-		pg := initPostgres(ctx, connString)
-		runMigrations(ctx, pg, migFS, postgresMigrations)
-		return pg,
-			database.NewPostgresSessionStore(pg),
-			database.NewPostgresObjectStore(pg)
-
-	default:
+	case SqliteDriver:
 		sqlite := initSqlite(connString)
 		runMigrations(ctx, sqlite, migFS, sqliteMigrations)
 		return sqlite,
 			database.NewSqliteSessionStore(sqlite),
 			database.NewSqliteObjectStore(sqlite)
 
+	case PostgresDriver:
+		pg := initPostgres(ctx, connString)
+		runMigrations(ctx, pg, migFS, postgresMigrations)
+		return pg,
+			database.NewPostgresSessionStore(pg),
+			database.NewPostgresObjectStore(pg)
 	}
+
+	panic(fmt.Sprintf("invalid db driver: %s", connDriver))
 }
 
 func getDriver(connString string) string {
-	if strings.Contains(connString, SqliteDriver) {
-		return SqliteDriver
-	}
-
 	if strings.Contains(connString, PostgresDriver) {
 		return PostgresDriver
 	}
 
-	panic(fmt.Sprintf("unsupported driver in connString: %s", connString))
+	return SqliteDriver
 }
 
 func initSqlite(connString string) *database.Sqlite {

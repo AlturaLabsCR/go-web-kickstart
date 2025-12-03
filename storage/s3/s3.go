@@ -34,6 +34,7 @@ const (
 type Storage interface {
 	// require read/write from/to a database
 	Put(ctx context.Context, parms PutObjectParams) (key, publicURL string, err error)
+	Get(ctx context.Context, key string) (data []byte, err error)
 	Delete(ctx context.Context, key string) error
 
 	// avoids excessive API queries
@@ -189,6 +190,17 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) (key, publicURL st
 	}
 
 	return newKey, s.publicEndpoint + newKey, nil
+}
+
+func (s *S3) Get(ctx context.Context, key string) (data []byte, err error) {
+	out, err := s.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return io.ReadAll(out.Body)
 }
 
 func (s *S3) Delete(ctx context.Context, key string) error {
