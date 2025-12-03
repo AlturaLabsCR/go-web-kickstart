@@ -14,10 +14,10 @@ import (
 const (
 	AppTitle                   = "MyApp"
 	defaultPort                = "8080"
-	defaultConnStr             = "./data/db.db"
+	defaultConnStr             = "data/db.db"
 	defaultLogLevel            = "0"
 	defaultStorageType         = "local"
-	defaultStoragePath         = "./data/storage"
+	defaultStoragePath         = "data/storage"
 	defaultMaxObjectSize int64 = 0.1e9 // 100MB
 	defaultMaxBucketSize int64 = 1e9   // 1GB
 )
