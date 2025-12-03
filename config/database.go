@@ -27,64 +27,71 @@ const (
 type Migrations map[string]embed.FS
 
 func InitDB(migrations Migrations) (database.Database, kv.Store[sessions.Session], kv.Store[s3.Object]) {
+	return clients(Config.Database.ConnString, migrations)
+}
+
+func clients(connString string, migrations Migrations) (database.Database, kv.Store[sessions.Session], kv.Store[s3.Object]) {
 	ctx := context.Background()
-
-	connString := Config.Database.ConnString
-
-	connDriver := SqliteDriver
-	if strings.Contains(connString, PostgresDriver) {
-		connDriver = PostgresDriver
-	}
+	connDriver := getDriver(connString)
 
 	migFS, ok := migrations[connDriver]
 	if !ok {
 		panic(fmt.Sprintf("no migration folder provided for driver %q", connDriver))
 	}
 
-	var (
-		conn         database.Database
-		sessionStore kv.Store[sessions.Session]
-		objectStore  kv.Store[s3.Object]
-	)
-
 	switch connDriver {
 	case SqliteDriver:
-		sqlite, err := database.NewSqlite(connString)
-		if err != nil {
-			abs, errs := filepath.Abs(connString)
-			if errs != nil {
-				abs = connString
-			}
-			dir := filepath.Dir(abs)
-			panic(fmt.Sprintf(
-				"unable to create sqlite connection: %v\ncheck if the folder `%s` exists and has write permissions",
-				err, dir,
-			))
-		}
-
+		sqlite := initSqlite(connString)
 		runMigrations(ctx, sqlite, migFS, sqliteMigrations)
-
-		conn = sqlite
-		sessionStore = database.NewSqliteSessionStore(sqlite)
-		objectStore = database.NewSqliteObjectStore(sqlite)
+		return sqlite,
+			database.NewSqliteSessionStore(sqlite),
+			database.NewSqliteObjectStore(sqlite)
 
 	case PostgresDriver:
-		pg, err := database.NewPostgres(ctx, connString)
-		if err != nil {
-			panic(fmt.Sprintf("unable to create connection pool: %v", err))
-		}
-
+		pg := initPostgres(ctx, connString)
 		runMigrations(ctx, pg, migFS, postgresMigrations)
-
-		conn = pg
-		sessionStore = database.NewPostgresSessionStore(pg)
-		objectStore = database.NewPostgresObjectStore(pg)
-
-	default:
-		panic(fmt.Sprintf("invalid db driver: %s", connDriver))
+		return pg,
+			database.NewPostgresSessionStore(pg),
+			database.NewPostgresObjectStore(pg)
 	}
 
-	return conn, sessionStore, objectStore
+	panic(fmt.Sprintf("invalid db driver: %s", connDriver))
+}
+
+func getDriver(connString string) string {
+	if strings.Contains(connString, SqliteDriver) {
+		return SqliteDriver
+	}
+
+	if strings.Contains(connString, PostgresDriver) {
+		return PostgresDriver
+	}
+
+	panic(fmt.Sprintf("unsupported driver in connString: %s", connString))
+}
+
+func initSqlite(connString string) *database.Sqlite {
+	sqlite, err := database.NewSqlite(connString)
+	if err != nil {
+		abs, errs := filepath.Abs(connString)
+		if errs != nil {
+			abs = connString
+		}
+		dir := filepath.Dir(abs)
+		panic(fmt.Sprintf(
+			"unable to create sqlite connection: %v\ncheck if the folder `%s` exists and has write permissions",
+			err, dir,
+		))
+	}
+	return sqlite
+}
+
+func initPostgres(ctx context.Context, connString string) *database.Postgres {
+	pg, err := database.NewPostgres(ctx, connString)
+	if err != nil {
+		panic(fmt.Sprintf("unable to create connection pool: %v", err))
+	}
+	return pg
 }
 
 func runMigrations(ctx context.Context, db database.Database, fsys embed.FS, folder string) {
