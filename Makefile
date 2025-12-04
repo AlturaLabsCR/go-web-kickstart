@@ -31,8 +31,8 @@ assets/js/datastar.js:
 		"https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.6/bundles/datastar.js" \
 		assets/js/datastar.js
 
-.PHONY: clean/datastar
-clean/datastar:
+.PHONY: clean/assets/js/datastar.js
+clean/assets/js/datastar.js:
 	rm -rf assets/js/datastar.js
 
 SQL=$(wildcard database/**/migrations/*.sql)
@@ -74,7 +74,7 @@ $(ESBUILD_OUT) &: $(ESBUILD_IN) node_modules
 	@touch $@
 
 .PHONY: clean/assets/js
-clean/assets/js:
+clean/assets/js: clean/assets/js/datastar.js
 	rm -rf $(ESBUILD_OUT)
 
 GEN += assets/css/styles.css

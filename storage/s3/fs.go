@@ -28,7 +28,8 @@ type FileSystem struct {
 
 	publicEndpoint string
 
-	mu sync.RWMutex
+	mu       sync.RWMutex
+	keyLocks sync.Map
 }
 
 func NewFS(params S3Params) *FileSystem {
@@ -45,9 +46,6 @@ func NewFS(params S3Params) *FileSystem {
 }
 
 func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) (key, publicURL string, err error) {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
-
 	mime, size, data, err := utils.InspectReader(
 		params.Body,
 		fs.maxObjectSize,
@@ -79,6 +77,10 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) (key, pub
 
 	newKey := dir + md5 + ext
 
+	keyLock := fs.getKeyLock(newKey)
+	keyLock.Lock()
+	defer keyLock.Unlock()
+
 	var oldSize int64 = 0
 
 	object, err := fs.cache.Get(ctx, newKey)
@@ -99,7 +101,7 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) (key, pub
 		}
 	} else {
 		if object.MD5 == md5 {
-			return newKey, fs.publicEndpoint + newKey, err
+			return object.Key, fs.publicEndpoint + object.Key, nil
 		}
 
 		oldSize = object.Size
@@ -110,10 +112,14 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) (key, pub
 		object.Modified = time.Now()
 	}
 
+	fs.mu.Lock()
 	newSize := fs.bucketSize - oldSize + size
 	if newSize > fs.maxBucketSize {
+		fs.mu.Unlock()
 		return "", "", ErrBucketTooLarge
 	}
+	fs.bucketSize = fs.bucketSize - oldSize + size
+	fs.mu.Unlock()
 
 	path, err := fs.objectPath(newKey)
 	if err != nil {
@@ -123,7 +129,6 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) (key, pub
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return "", "", err
 	}
-	fs.bucketSize = newSize
 
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return "", "", err
@@ -141,8 +146,9 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) (key, pub
 }
 
 func (fs *FileSystem) Get(ctx context.Context, key string) ([]byte, error) {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
+	keyLock := fs.getKeyLock(key)
+	keyLock.Lock()
+	defer keyLock.Unlock()
 
 	path, err := fs.objectPath(key)
 	if err != nil {
@@ -161,12 +167,14 @@ func (fs *FileSystem) Get(ctx context.Context, key string) ([]byte, error) {
 }
 
 func (fs *FileSystem) Delete(ctx context.Context, key string) error {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
+	keyLock := fs.getKeyLock(key)
+	keyLock.Lock()
+	defer keyLock.Unlock()
 
 	object, err := fs.cache.Get(ctx, key)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
+			fs.keyLocks.Delete(key)
 			return nil
 		}
 		return err
@@ -181,11 +189,15 @@ func (fs *FileSystem) Delete(ctx context.Context, key string) error {
 		return err
 	}
 
+	fs.mu.Lock()
 	fs.bucketSize -= object.Size
+	fs.mu.Unlock()
 
 	if err := fs.store.Delete(ctx, key); err != nil {
 		return err
 	}
+
+	fs.keyLocks.Delete(key)
 
 	return fs.cache.Delete(ctx, key)
 }
@@ -209,4 +221,21 @@ func (fs *FileSystem) LoadCache(ctx context.Context) error {
 
 func (fs *FileSystem) objectPath(key string) (string, error) {
 	return filepath.Abs(filepath.Join(fs.root, key))
+}
+
+// FIXME: Check this is better then the other (avoid vulnerabilities like ../../ paths )
+// func (fs *FileSystem) objectPath(key string) (string, error) {
+//     p := filepath.Join(fs.root, key)
+//     p = filepath.Clean(p)
+//
+//     root := filepath.Clean(fs.root)
+//     if !strings.HasPrefix(p, root+string(os.PathSeparator)) {
+//         return "", fmt.Errorf("invalid object key: path escapes bucket root")
+//     }
+//     return p, nil
+// }
+
+func (fs *FileSystem) getKeyLock(key string) *sync.Mutex {
+	lockIface, _ := fs.keyLocks.LoadOrStore(key, &sync.Mutex{})
+	return lockIface.(*sync.Mutex)
 }

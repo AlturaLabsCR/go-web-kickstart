@@ -64,7 +64,8 @@ type S3 struct {
 
 	publicEndpoint string
 
-	mu sync.RWMutex
+	mu       sync.RWMutex
+	keyLocks sync.Map
 }
 
 type PutObjectParams struct {
@@ -102,9 +103,6 @@ func New(params S3Params) (*S3, error) {
 }
 
 func (s *S3) Put(ctx context.Context, params PutObjectParams) (key, publicURL string, err error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	mime, size, data, err := utils.InspectReader(
 		params.Body,
 		s.maxObjectSize,
@@ -136,9 +134,13 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) (key, publicURL st
 
 	newKey := dir + md5 + ext
 
+	keyLock := s.getKeyLock(newKey)
+	keyLock.Lock()
+	defer keyLock.Unlock()
+
 	var oldSize int64 = 0
 
-	object, err := s.cache.Get(ctx, params.Key)
+	object, err := s.cache.Get(ctx, newKey)
 	if err != nil {
 		if !errors.Is(err, kv.ErrNotFound) {
 			return "", "", err
@@ -156,7 +158,7 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) (key, publicURL st
 		}
 	} else {
 		if object.MD5 == md5 {
-			return object.Key, s.publicEndpoint + newKey, err
+			return object.Key, s.publicEndpoint + object.Key, nil
 		}
 
 		oldSize = object.Size
@@ -167,10 +169,14 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) (key, publicURL st
 		object.Modified = time.Now()
 	}
 
+	s.mu.Lock()
 	newSize := s.bucketSize - oldSize + size
 	if newSize > s.maxBucketSize {
-		return "", "", ErrTooLarge
+		s.mu.Unlock()
+		return "", "", ErrBucketTooLarge
 	}
+	s.bucketSize = s.bucketSize - oldSize + size
+	s.mu.Unlock()
 
 	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(s.bucket),
@@ -179,7 +185,6 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) (key, publicURL st
 	}); err != nil {
 		return "", "", err
 	}
-	s.bucketSize = newSize
 
 	if err := s.store.Set(ctx, newKey, object); err != nil {
 		return "", "", err
@@ -193,8 +198,9 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) (key, publicURL st
 }
 
 func (s *S3) Get(ctx context.Context, key string) (data []byte, err error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	keyLock := s.getKeyLock(key)
+	keyLock.Lock()
+	defer keyLock.Unlock()
 
 	out, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
@@ -203,16 +209,20 @@ func (s *S3) Get(ctx context.Context, key string) (data []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
+	defer out.Body.Close()
+
 	return io.ReadAll(out.Body)
 }
 
 func (s *S3) Delete(ctx context.Context, key string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	keyLock := s.getKeyLock(key)
+	keyLock.Lock()
+	defer keyLock.Unlock()
 
 	object, err := s.cache.Get(ctx, key)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
+			s.keyLocks.Delete(key)
 			return nil
 		}
 		return err
@@ -225,13 +235,21 @@ func (s *S3) Delete(ctx context.Context, key string) error {
 		return err
 	}
 
+	s.mu.Lock()
 	s.bucketSize -= object.Size
+	s.mu.Unlock()
 
 	if err := s.store.Delete(ctx, key); err != nil {
 		return err
 	}
 
-	return s.cache.Delete(ctx, key)
+	if err := s.cache.Delete(ctx, key); err != nil {
+		return err
+	}
+
+	s.keyLocks.Delete(key)
+
+	return nil
 }
 
 func (s *S3) LoadCache(ctx context.Context) error {
@@ -248,4 +266,9 @@ func (s *S3) LoadCache(ctx context.Context) error {
 	}
 	s.bucketSize = size
 	return nil
+}
+
+func (s *S3) getKeyLock(key string) *sync.Mutex {
+	lockIface, _ := s.keyLocks.LoadOrStore(key, &sync.Mutex{})
+	return lockIface.(*sync.Mutex)
 }
