@@ -69,7 +69,7 @@ type S3 struct {
 }
 
 type PutObjectParams struct {
-	Key  string
+	Path string
 	Body io.Reader
 }
 
@@ -115,12 +115,12 @@ func (s *S3) Put(ctx context.Context, params PutObjectParams) (key, publicURL st
 		return "", "", ErrTooLarge
 	}
 
-	parts := strings.Split(params.Key, "/")
+	parts := strings.Split(params.Path, "/")
 	filename := parts[len(parts)-1]
 
-	dir := strings.TrimSuffix(params.Key, filename)
+	dir := strings.TrimSuffix(params.Path, filename)
 
-	parts = strings.Split(params.Key, ".")
+	parts = strings.Split(params.Path, ".")
 	ext := parts[len(parts)-1]
 
 	if len(ext) < 31 && ext != "" {

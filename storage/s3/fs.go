@@ -58,12 +58,12 @@ func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) (key, pub
 		return "", "", ErrTooLarge
 	}
 
-	parts := strings.Split(params.Key, "/")
+	parts := strings.Split(params.Path, "/")
 	filename := parts[len(parts)-1]
 
-	dir := strings.TrimSuffix(params.Key, filename)
+	dir := strings.TrimSuffix(params.Path, filename)
 
-	parts = strings.Split(params.Key, ".")
+	parts = strings.Split(params.Path, ".")
 	ext := parts[len(parts)-1]
 
 	if len(ext) < 31 && ext != "" {
@@ -220,20 +220,15 @@ func (fs *FileSystem) LoadCache(ctx context.Context) error {
 }
 
 func (fs *FileSystem) objectPath(key string) (string, error) {
-	return filepath.Abs(filepath.Join(fs.root, key))
-}
+	p := filepath.Join(fs.root, key)
+	p = filepath.Clean(p)
 
-// FIXME: Check this is better then the other (avoid vulnerabilities like ../../ paths )
-// func (fs *FileSystem) objectPath(key string) (string, error) {
-//     p := filepath.Join(fs.root, key)
-//     p = filepath.Clean(p)
-//
-//     root := filepath.Clean(fs.root)
-//     if !strings.HasPrefix(p, root+string(os.PathSeparator)) {
-//         return "", fmt.Errorf("invalid object key: path escapes bucket root")
-//     }
-//     return p, nil
-// }
+	root := filepath.Clean(fs.root)
+	if !strings.HasPrefix(p, root+string(os.PathSeparator)) {
+		return "", fmt.Errorf("invalid object key: path escapes bucket root")
+	}
+	return p, nil
+}
 
 func (fs *FileSystem) getKeyLock(key string) *sync.Mutex {
 	lockIface, _ := fs.keyLocks.LoadOrStore(key, &sync.Mutex{})
