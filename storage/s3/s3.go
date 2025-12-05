@@ -2,21 +2,10 @@
 package s3
 
 import (
-	"bytes"
 	"context"
-	"crypto/md5"
-	"encoding/hex"
-	"errors"
 	"io"
-	"strings"
-	"sync"
-	"time"
-
-	"app/storage/kv"
-	"app/utils"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	s3config "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
@@ -27,248 +16,87 @@ func (e errStr) Error() string {
 }
 
 const (
-	ErrTooLarge       = errStr("object size exceeds maximum allowed by this interface")
+	ErrObjectTooLarge = errStr("object size exceeds maximum allowed by this interface")
 	ErrBucketTooLarge = errStr("bucket size exceeds maximum allowed by this interface")
 )
 
-type Storage interface {
-	// require read/write from/to a database
-	Put(ctx context.Context, parms PutObjectParams) (key, publicURL string, err error)
-	Get(ctx context.Context, key string) (data []byte, err error)
-	Delete(ctx context.Context, key string) error
-
-	// avoids excessive API queries
-	LoadCache(ctx context.Context) error
-}
-
-type Object struct {
-	Bucket   string
-	Key      string
-	Mime     string
-	MD5      string
-	Size     int64
-	Created  time.Time
-	Modified time.Time
-}
-
-type S3 struct {
-	client     *s3.Client
-	bucket     string
-	bucketSize int64
-
-	store kv.Store[Object]
-	cache *kv.MemoryStore[Object]
-
-	maxObjectSize int64
-	maxBucketSize int64
-
-	publicEndpoint string
-
-	mu       sync.RWMutex
-	keyLocks sync.Map
-}
-
-type PutObjectParams struct {
-	Path string
-	Body io.Reader
-}
-
-type S3Params struct {
-	Bucket         string
-	Store          kv.Store[Object]
-	MaxObjectSize  int64
-	MaxBucketSize  int64
-	PublicEndpoint string
-}
-
-func New(params S3Params) (*S3, error) {
-	s3c, err := s3config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		return nil, err
-	}
-	s3client := s3.NewFromConfig(s3c)
-
-	cache := kv.NewMemoryStore[Object]()
-
-	return &S3{
-		client:         s3client,
-		bucket:         params.Bucket,
-		bucketSize:     0,
+func New(params BucketParams) (*Bucket, error) {
+	return &Bucket{
+		client:         params.Client,
+		bucketName:     params.BucketName,
 		store:          params.Store,
-		cache:          cache,
+		cache:          params.Cache,
 		maxObjectSize:  params.MaxObjectSize,
 		maxBucketSize:  params.MaxBucketSize,
 		publicEndpoint: params.PublicEndpoint,
+
+		sem: make(chan struct{}, params.MaxOps),
+
+		bucketSize: 0,
 	}, nil
 }
 
-func (s *S3) Put(ctx context.Context, params PutObjectParams) (key, publicURL string, err error) {
-	mime, size, data, err := utils.InspectReader(
-		params.Body,
-		s.maxObjectSize,
-	)
+func (b *Bucket) PutObject(ctx context.Context, key string, body io.Reader) (publicURL string, err error) {
+	if err := b.wait(ctx); err != nil {
+		return "", err
+	}
+	defer b.done()
+
+	objLock := b.getObjectLock(key)
+	defer objLock.Unlock()
+
+	r, err := b.newStorageReader(body)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
+	defer r.Close()
 
-	if size > s.maxObjectSize {
-		return "", "", ErrTooLarge
-	}
-
-	parts := strings.Split(params.Path, "/")
-	filename := parts[len(parts)-1]
-
-	dir := strings.TrimSuffix(params.Path, filename)
-
-	parts = strings.Split(params.Path, ".")
-	ext := parts[len(parts)-1]
-
-	if len(ext) < 31 && ext != "" {
-		ext = "." + ext
-	} else {
-		ext = ""
-	}
-
-	md5sum := md5.Sum(data)
-	md5 := hex.EncodeToString(md5sum[:])
-
-	newKey := dir + md5 + ext
-
-	keyLock := s.getKeyLock(newKey)
-	keyLock.Lock()
-	defer keyLock.Unlock()
-
-	var oldSize int64 = 0
-
-	object, err := s.cache.Get(ctx, newKey)
-	if err != nil {
-		if !errors.Is(err, kv.ErrNotFound) {
-			return "", "", err
-		}
-
-		now := time.Now()
-		object = Object{
-			Bucket:   s.bucket,
-			Key:      newKey,
-			Mime:     mime,
-			MD5:      md5,
-			Size:     size,
-			Created:  now,
-			Modified: now,
-		}
-	} else {
-		if object.MD5 == md5 {
-			return object.Key, s.publicEndpoint + object.Key, nil
-		}
-
-		oldSize = object.Size
-
-		object.Mime = mime
-		object.MD5 = md5
-		object.Size = size
-		object.Modified = time.Now()
-	}
-
-	s.mu.Lock()
-	newSize := s.bucketSize - oldSize + size
-	if newSize > s.maxBucketSize {
-		s.mu.Unlock()
-		return "", "", ErrBucketTooLarge
-	}
-	s.bucketSize = s.bucketSize - oldSize + size
-	s.mu.Unlock()
-
-	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(newKey),
-		Body:   bytes.NewReader(data),
-	}); err != nil {
-		return "", "", err
-	}
-
-	if err := s.store.Set(ctx, newKey, object); err != nil {
-		return "", "", err
-	}
-
-	if err := s.cache.Set(ctx, newKey, object); err != nil {
-		return "", "", err
-	}
-
-	return newKey, s.publicEndpoint + newKey, nil
-}
-
-func (s *S3) Get(ctx context.Context, key string) (data []byte, err error) {
-	keyLock := s.getKeyLock(key)
-	keyLock.Lock()
-	defer keyLock.Unlock()
-
-	out, err := s.client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
+	_, err = b.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(b.bucketName),
+		Key:         aws.String(key),
+		Body:        r,
+		ContentType: aws.String(r.ct),
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	defer out.Body.Close()
 
-	return io.ReadAll(out.Body)
+	return b.publicEndpoint + key, nil
 }
 
-func (s *S3) Delete(ctx context.Context, key string) error {
-	keyLock := s.getKeyLock(key)
-	keyLock.Lock()
-	defer keyLock.Unlock()
-
-	object, err := s.cache.Get(ctx, key)
-	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			s.keyLocks.Delete(key)
-			return nil
-		}
-		return err
-	}
-
-	if _, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
-	}); err != nil {
-		return err
-	}
-
-	s.mu.Lock()
-	s.bucketSize -= object.Size
-	s.mu.Unlock()
-
-	if err := s.store.Delete(ctx, key); err != nil {
-		return err
-	}
-
-	if err := s.cache.Delete(ctx, key); err != nil {
-		return err
-	}
-
-	s.keyLocks.Delete(key)
-
-	return nil
-}
-
-func (s *S3) LoadCache(ctx context.Context) error {
-	buckets, err := s.store.GetElems(ctx)
+func (b *Bucket) LoadCache(ctx context.Context) error {
+	buckets, err := b.store.GetElems(ctx)
 	if err != nil {
 		return err
 	}
 	var size int64 = 0
 	for key, object := range buckets {
-		if err := s.cache.Set(ctx, key, object); err != nil {
+		if err := b.cache.Set(ctx, key, object); err != nil {
 			return err
 		}
 		size += object.Size
 	}
-	s.bucketSize = size
+	b.bucketSize = size
 	return nil
 }
 
-func (s *S3) getKeyLock(key string) *sync.Mutex {
-	lockIface, _ := s.keyLocks.LoadOrStore(key, &sync.Mutex{})
-	return lockIface.(*sync.Mutex)
+func (b *Bucket) ReserveBytes(n int64) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if b.maxBucketSize > 0 && b.bucketSize+b.inflight+n > b.maxBucketSize {
+		return ErrBucketTooLarge
+	}
+
+	b.inflight += n
+	return nil
+}
+
+func (b *Bucket) ReleaseBytes(n int64) {
+	b.mu.Lock()
+	b.inflight -= n
+	if b.inflight < 0 {
+		b.inflight = 0
+	}
+	b.mu.Unlock()
 }
