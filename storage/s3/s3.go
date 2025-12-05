@@ -43,6 +43,7 @@ func (b *Bucket) PutObject(ctx context.Context, key string, body io.Reader) (pub
 	defer b.done()
 
 	objLock := b.getObjectLock(key)
+	objLock.Lock()
 	defer objLock.Unlock()
 
 	r, err := b.newStorageReader(body)
@@ -61,6 +62,11 @@ func (b *Bucket) PutObject(ctx context.Context, key string, body io.Reader) (pub
 		return "", err
 	}
 
+	b.mu.Lock()
+	b.bucketSize += r.reserved
+	b.inflight -= r.reserved
+	b.mu.Unlock()
+
 	return b.publicEndpoint + key, nil
 }
 
@@ -76,7 +82,11 @@ func (b *Bucket) LoadCache(ctx context.Context) error {
 		}
 		size += object.Size
 	}
+
+	b.mu.Lock()
 	b.bucketSize = size
+	b.mu.Unlock()
+
 	return nil
 }
 
