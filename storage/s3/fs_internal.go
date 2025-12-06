@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -40,10 +41,37 @@ func (fs *FileSystem) putObject(key string, body io.Reader) error {
 	return nil
 }
 
+func (fs *FileSystem) getObject(_ context.Context, key string) (io.ReadCloser, error) {
+	path, err := fs.objectPath(key)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return f, nil
+}
+
+func (fs *FileSystem) deleteObject(_ context.Context, key string) error {
+	path, err := fs.objectPath(key)
+	if err != nil {
+		return err
+	}
+
+	if err := os.Remove(path); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (fs *FileSystem) makeSizeCallback() reader.ObjectReaderCallback {
 	var lastSize int64
 
-	return func(total int64) error {
+	return func(total int64) bool {
 		delta := total - lastSize
 		lastSize = total
 
@@ -52,17 +80,17 @@ func (fs *FileSystem) makeSizeCallback() reader.ObjectReaderCallback {
 
 		if fs.maxBucketSize > 0 && (fs.bucketSize+newInflight) > fs.maxBucketSize {
 			fs.mu.Unlock()
-			return ErrBucketTooLarge
+			return false
 		}
 
 		fs.inflight = newInflight
 		fs.mu.Unlock()
 
 		if fs.maxObjectSize > 0 && total > fs.maxObjectSize {
-			return ErrObjectTooLarge
+			return false
 		}
 
-		return nil
+		return true
 	}
 }
 

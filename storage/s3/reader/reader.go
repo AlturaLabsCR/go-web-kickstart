@@ -8,7 +8,15 @@ import (
 	"net/http"
 )
 
-type ObjectReaderCallback func(total int64) error
+type errStr string
+
+func (e errStr) Error() string {
+	return string(e)
+}
+
+const ErrOverflow = errStr("reader overflow")
+
+type ObjectReaderCallback func(total int64) bool
 
 type ObjectReader struct {
 	r        io.Reader
@@ -16,6 +24,7 @@ type ObjectReader struct {
 	ct       string
 	size     int64
 	callback ObjectReaderCallback
+	stopped  bool
 }
 
 func (o *ObjectReader) ContentType() string { return o.ct }
@@ -23,34 +32,47 @@ func (o *ObjectReader) ContentType() string { return o.ct }
 func (o *ObjectReader) Size() int64 { return o.size }
 
 func (o *ObjectReader) Read(p []byte) (int, error) {
-	if err := o.ctx.Err(); err != nil {
-		return 0, err
+	if o.stopped {
+		return 0, ErrOverflow
 	}
 
-	n, err := o.r.Read(p)
-	if n > 0 {
-		o.size += int64(n)
+	if err := o.ctx.Err(); err != nil {
+		o.stopped = true
+		return 0, ErrOverflow
+	}
 
-		if o.callback != nil {
-			if cbErr := o.callback(o.size); cbErr != nil {
-				return n, cbErr
+	for {
+		n, err := o.r.Read(p)
+
+		if n > 0 {
+			o.size += int64(n)
+
+			if o.callback != nil && !o.callback(o.size) {
+				o.stopped = true
+				return n, ErrOverflow
 			}
+
+			return n, err
+		}
+
+		if err != nil {
+			if err == io.EOF {
+				return 0, io.EOF
+			}
+			return 0, err
 		}
 	}
-
-	if o.ctx.Err() != nil {
-		return n, o.ctx.Err()
-	}
-
-	return n, err
 }
 
 func NewObjectReader(ctx context.Context, r io.Reader, cb ObjectReaderCallback) (*ObjectReader, error) {
 	const sniffLen = 512
 	buf := make([]byte, sniffLen)
 
-	n, err := io.ReadAtLeast(io.LimitReader(r, sniffLen), buf, 1)
-	if err != nil && err != io.ErrUnexpectedEOF {
+	n, err := r.Read(buf)
+	if n < 0 {
+		n = 0
+	}
+	if err != nil && err != io.EOF {
 		return nil, err
 	}
 

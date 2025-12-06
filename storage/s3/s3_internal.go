@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"sync"
@@ -12,10 +13,17 @@ import (
 )
 
 func (b *Bucket) putObject(ctx context.Context, key string, body io.Reader) error {
-	_, err := b.client.PutObject(ctx, &s3.PutObjectInput{
+	// FIXME: pass a compatible reader, not the data
+
+	data, err := io.ReadAll(body)
+	if err != nil {
+		return err
+	}
+
+	_, err = b.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(b.bucketName),
 		Key:    aws.String(key),
-		Body:   body,
+		Body:   bytes.NewReader(data),
 	})
 
 	return err
@@ -42,7 +50,7 @@ func (b *Bucket) deleteObject(ctx context.Context, key string) (err error) {
 func (b *Bucket) makeSizeCallback() reader.ObjectReaderCallback {
 	var lastSize int64
 
-	return func(total int64) error {
+	return func(total int64) bool {
 		delta := total - lastSize
 		lastSize = total
 
@@ -51,17 +59,17 @@ func (b *Bucket) makeSizeCallback() reader.ObjectReaderCallback {
 
 		if b.maxBucketSize > 0 && (b.bucketSize+newInflight) > b.maxBucketSize {
 			b.mu.Unlock()
-			return ErrBucketTooLarge
+			return false
 		}
 
 		b.inflight = newInflight
 		b.mu.Unlock()
 
 		if b.maxObjectSize > 0 && total > b.maxObjectSize {
-			return ErrObjectTooLarge
+			return false
 		}
 
-		return nil
+		return true
 	}
 }
 

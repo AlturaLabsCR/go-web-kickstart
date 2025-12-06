@@ -38,6 +38,11 @@ func (b *Bucket) PutObject(ctx context.Context, key string, body io.Reader) (obj
 		return nil, err
 	}
 
+	if r.Size() > b.maxObjectSize {
+		b.deleteObject(ctx, key)
+		return nil, ErrObjectTooLarge
+	}
+
 	newSize := r.Size()
 
 	b.mu.Lock()
@@ -53,7 +58,7 @@ func (b *Bucket) PutObject(ctx context.Context, key string, body io.Reader) (obj
 		Key:       key,
 		PublicURL: b.publicEndpoint + key,
 		Mime:      r.ContentType(),
-		Size:      r.Size(),
+		Size:      newSize,
 		Modified:  now,
 		Created:   created,
 	}

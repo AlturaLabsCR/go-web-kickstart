@@ -38,6 +38,11 @@ func (fs *FileSystem) PutObject(ctx context.Context, key string, body io.Reader)
 		return nil, err
 	}
 
+	if r.Size() > fs.maxObjectSize {
+		fs.deleteObject(ctx, key)
+		return nil, ErrObjectTooLarge
+	}
+
 	newSize := r.Size()
 
 	fs.mu.Lock()
@@ -53,7 +58,7 @@ func (fs *FileSystem) PutObject(ctx context.Context, key string, body io.Reader)
 		Key:       key,
 		PublicURL: fs.publicEndpoint + key,
 		Mime:      r.ContentType(),
-		Size:      r.Size(),
+		Size:      newSize,
 		Modified:  now,
 		Created:   created,
 	}
@@ -79,17 +84,12 @@ func (fs *FileSystem) GetObject(ctx context.Context, key string) (*Object, io.Re
 		return nil, nil, err
 	}
 
-	path, err := fs.objectPath(key)
+	body, err := fs.getObject(ctx, key)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return obj, f, nil
+	return obj, body, nil
 }
 
 func (fs *FileSystem) DeleteObject(ctx context.Context, key string) error {
@@ -105,12 +105,7 @@ func (fs *FileSystem) DeleteObject(ctx context.Context, key string) error {
 		return err
 	}
 
-	path, err := fs.objectPath(key)
-	if err != nil {
-		return err
-	}
-
-	if err := os.Remove(path); err == nil {
+	if err := fs.deleteObject(ctx, key); err == nil {
 		fs.mu.Lock()
 		fs.bucketSize -= obj.Size
 		fs.mu.Unlock()
