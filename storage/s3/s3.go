@@ -39,6 +39,8 @@ func (b *Bucket) PutObject(ctx context.Context, key string, body io.Reader) (obj
 
 	b.mu.Lock()
 	b.inflight -= newSize
+	b.bucketSize -= oldSize
+	b.bucketSize += newSize
 	b.mu.Unlock()
 
 	if err != nil {
@@ -46,14 +48,16 @@ func (b *Bucket) PutObject(ctx context.Context, key string, body io.Reader) (obj
 	}
 
 	if newSize > b.maxObjectSize {
-		b.deleteObject(ctx, key)
+		if err := b.deleteObject(ctx, key); err != nil {
+			return nil, err
+		}
+
+		b.mu.Lock()
+		b.bucketSize -= newSize
+		b.mu.Unlock()
+
 		return nil, ErrObjectTooLarge
 	}
-
-	b.mu.Lock()
-	b.bucketSize -= oldSize
-	b.bucketSize += newSize
-	b.mu.Unlock()
 
 	object = &Object{
 		Bucket:    b.bucketName,

@@ -39,6 +39,8 @@ func (fs *FileSystem) PutObject(ctx context.Context, key string, body io.Reader)
 
 	fs.mu.Lock()
 	fs.inflight -= newSize
+	fs.bucketSize -= oldSize
+	fs.bucketSize += newSize
 	fs.mu.Unlock()
 
 	if err != nil {
@@ -46,14 +48,15 @@ func (fs *FileSystem) PutObject(ctx context.Context, key string, body io.Reader)
 	}
 
 	if newSize > fs.maxObjectSize {
-		fs.deleteObject(ctx, key)
+		if err := fs.deleteObject(ctx, key); err != nil {
+			return nil, err
+		}
+
+		fs.mu.Lock()
+		fs.bucketSize -= newSize
+		fs.mu.Unlock()
 		return nil, ErrObjectTooLarge
 	}
-
-	fs.mu.Lock()
-	fs.bucketSize -= oldSize
-	fs.bucketSize += newSize
-	fs.mu.Unlock()
 
 	object = &Object{
 		Bucket:    fs.root,
