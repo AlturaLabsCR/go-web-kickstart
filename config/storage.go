@@ -6,6 +6,9 @@ import (
 	"app/storage"
 	"app/storage/kv"
 	"app/storage/s3"
+
+	"github.com/aws/aws-sdk-go-v2/config"
+	sdk "github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 func InitStorage(store kv.Store[s3.Object]) storage.ObjectStorage {
@@ -26,7 +29,13 @@ func InitStorage(store kv.Store[s3.Object]) storage.ObjectStorage {
 			panic("error setting up filesystem storage client")
 		}
 	case "remote":
+		cfg, err := config.LoadDefaultConfig(context.Background())
+		if err != nil {
+			panic("error setting up s3 storage client")
+		}
+
 		storage, err = s3.NewS3(&s3.StorageParams{
+			Client:         sdk.NewFromConfig(cfg),
 			BucketName:     Config.Storage.Remote.Bucket,
 			Store:          store,
 			Cache:          kv.NewMemoryStore[s3.Object](),
