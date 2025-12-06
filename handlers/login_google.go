@@ -29,7 +29,7 @@ func (h *Handler) LoginUserGoogle(w http.ResponseWriter, r *http.Request) {
 	// from now on the user is valid
 
 	ua := useragent.Parse(r.UserAgent())
-	sessionData := config.SessionData{
+	sessionData := &config.SessionData{
 		OS:   ua.OS,
 		Name: ua.Name,
 	}

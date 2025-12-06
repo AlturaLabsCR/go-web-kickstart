@@ -25,7 +25,7 @@ func NewPostgresSessionStore(p *Postgres) *PostgresSessionStore {
 	}
 }
 
-func (p *PostgresSessionStore) Set(ctx context.Context, sessionID string, session sessions.Session) error {
+func (p *PostgresSessionStore) Set(ctx context.Context, sessionID string, session *sessions.Session) error {
 	return p.Queries.UpsertSession(ctx, db.UpsertSessionParams{
 		SessionID:        sessionID,
 		SessionUser:      session.SessionUser,
@@ -33,18 +33,16 @@ func (p *PostgresSessionStore) Set(ctx context.Context, sessionID string, sessio
 	})
 }
 
-func (p *PostgresSessionStore) Get(ctx context.Context, sessionID string) (sessions.Session, error) {
-	empty := sessions.Session{}
-
+func (p *PostgresSessionStore) Get(ctx context.Context, sessionID string) (*sessions.Session, error) {
 	session, err := p.Queries.SelectSession(ctx, sessionID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return empty, kv.ErrNotFound
+			return nil, kv.ErrNotFound
 		}
-		return empty, err
+		return nil, err
 	}
 
-	return sessions.Session{
+	return &sessions.Session{
 		SessionUser: session.SessionUser,
 		CSRFToken:   session.SessionCsrfToken,
 		CreatedAt:   session.SessionCreatedAt.Time,

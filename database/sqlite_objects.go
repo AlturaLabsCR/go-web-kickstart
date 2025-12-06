@@ -21,30 +21,30 @@ func NewSqliteObjectStore(s *Sqlite) *SqliteObjectStore {
 	}
 }
 
-func (s *SqliteObjectStore) Set(ctx context.Context, key string, data s3.Object) error {
+func (s *SqliteObjectStore) Set(ctx context.Context, key string, data *s3.Object) error {
 	return s.Queries.UpsertObject(ctx, db.UpsertObjectParams{
-		ObjectKey:    key,
-		ObjectBucket: data.Bucket,
-		ObjectMime:   data.Mime,
-		ObjectMd5:    data.MD5,
-		ObjectSize:   data.Size,
+		ObjectBucket:    data.Bucket,
+		ObjectKey:       key,
+		ObjectPublicUrl: data.PublicURL,
+		ObjectMime:      data.Mime,
+		ObjectSize:      data.Size,
 	})
 }
 
-func (s *SqliteObjectStore) Get(ctx context.Context, key string) (s3.Object, error) {
+func (s *SqliteObjectStore) Get(ctx context.Context, key string) (*s3.Object, error) {
 	obj, err := s.Queries.SelectObject(ctx, key)
 	if err != nil {
-		return s3.Object{}, err
+		return nil, err
 	}
 
-	return s3.Object{
-		Key:      obj.ObjectKey,
-		Bucket:   obj.ObjectBucket,
-		Mime:     obj.ObjectMime,
-		MD5:      obj.ObjectMd5,
-		Size:     obj.ObjectSize,
-		Created:  time.Unix(obj.ObjectCreated, 0),
-		Modified: time.Unix(obj.ObjectModified, 0),
+	return &s3.Object{
+		Bucket:    obj.ObjectBucket,
+		Key:       obj.ObjectKey,
+		PublicURL: obj.ObjectPublicUrl,
+		Mime:      obj.ObjectMime,
+		Size:      obj.ObjectSize,
+		Created:   time.Unix(obj.ObjectCreated, 0),
+		Modified:  time.Unix(obj.ObjectModified, 0),
 	}, nil
 }
 
@@ -62,13 +62,13 @@ func (s *SqliteObjectStore) GetElems(ctx context.Context) (map[string]s3.Object,
 
 	for _, obj := range dbObjects {
 		obs[obj.ObjectKey] = s3.Object{
-			Key:      obj.ObjectKey,
-			Bucket:   obj.ObjectBucket,
-			Mime:     obj.ObjectMime,
-			MD5:      obj.ObjectMd5,
-			Size:     obj.ObjectSize,
-			Created:  time.Unix(obj.ObjectCreated, 0),
-			Modified: time.Unix(obj.ObjectModified, 0),
+			Bucket:    obj.ObjectBucket,
+			Key:       obj.ObjectKey,
+			PublicURL: obj.ObjectPublicUrl,
+			Mime:      obj.ObjectMime,
+			Size:      obj.ObjectSize,
+			Created:   time.Unix(obj.ObjectCreated, 0),
+			Modified:  time.Unix(obj.ObjectModified, 0),
 		}
 	}
 

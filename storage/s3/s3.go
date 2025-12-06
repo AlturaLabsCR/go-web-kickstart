@@ -3,71 +3,117 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"io"
+	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"app/storage/kv"
+	"app/storage/s3/reader"
 )
 
-type errStr string
-
-func (e errStr) Error() string {
-	return string(e)
-}
-
-const (
-	ErrObjectTooLarge = errStr("object size exceeds maximum allowed by this interface")
-	ErrBucketTooLarge = errStr("bucket size exceeds maximum allowed by this interface")
-)
-
-func New(params BucketParams) (*Bucket, error) {
-	return &Bucket{
-		client:         params.Client,
-		bucketName:     params.BucketName,
-		store:          params.Store,
-		cache:          params.Cache,
-		maxObjectSize:  params.MaxObjectSize,
-		maxBucketSize:  params.MaxBucketSize,
-		publicEndpoint: params.PublicEndpoint,
-
-		sem: make(chan struct{}, params.MaxOps),
-
-		bucketSize: 0,
-	}, nil
-}
-
-func (b *Bucket) PutObject(ctx context.Context, key string, body io.Reader) (publicURL string, err error) {
-	if err := b.wait(ctx); err != nil {
-		return "", err
-	}
-	defer b.done()
-
+func (b *Bucket) PutObject(ctx context.Context, key string, body io.Reader) (object *Object, err error) {
 	objLock := b.getObjectLock(key)
 	objLock.Lock()
 	defer objLock.Unlock()
 
-	r, err := b.newStorageReader(body)
-	if err != nil {
-		return "", err
-	}
-	defer r.Close()
+	now := time.Now()
+	created := now
+	var oldSize int64 = 0
 
-	_, err = b.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket:      aws.String(b.bucketName),
-		Key:         aws.String(key),
-		Body:        r,
-		ContentType: aws.String(r.ct),
-	})
-	if err != nil {
-		return "", err
+	if obj, err := b.cache.Get(ctx, key); err == nil {
+		created = obj.Created
+		oldSize = obj.Size
+	} else {
+		if !errors.Is(err, kv.ErrNotFound) {
+			return nil, err
+		}
 	}
+
+	r, err := reader.NewObjectReader(ctx, body, b.makeSizeCallback())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := b.putObject(ctx, key, r); err != nil {
+		return nil, err
+	}
+
+	newSize := r.Size()
 
 	b.mu.Lock()
-	b.bucketSize += r.reserved
-	b.inflight -= r.reserved
+
+	b.bucketSize -= oldSize
+	b.bucketSize += newSize
+	b.inflight -= newSize
+
 	b.mu.Unlock()
 
-	return b.publicEndpoint + key, nil
+	object = &Object{
+		Bucket:    b.bucketName,
+		Key:       key,
+		PublicURL: b.publicEndpoint + key,
+		Mime:      r.ContentType(),
+		Size:      r.Size(),
+		Modified:  now,
+		Created:   created,
+	}
+
+	if err := b.store.Set(ctx, key, object); err != nil {
+		return nil, err
+	}
+
+	if err := b.cache.Set(ctx, key, object); err != nil {
+		return nil, err
+	}
+
+	return object, nil
+}
+
+func (b *Bucket) GetObject(ctx context.Context, key string) (*Object, io.ReadCloser, error) {
+	objLock := b.getObjectLock(key)
+	objLock.Lock()
+	defer objLock.Unlock()
+
+	obj, err := b.cache.Get(ctx, key)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	body, err := b.getObject(ctx, key)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return obj, body, nil
+}
+
+func (b *Bucket) DeleteObject(ctx context.Context, key string) error {
+	objLock := b.getObjectLock(key)
+	objLock.Lock()
+	defer objLock.Unlock()
+
+	obj, err := b.cache.Get(ctx, key)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			return nil
+		} else {
+			return err
+		}
+	}
+
+	if err := b.deleteObject(ctx, key); err == nil {
+		b.mu.Lock()
+		b.bucketSize -= obj.Size
+		b.mu.Unlock()
+	} else {
+		return err
+	}
+
+	if err := b.store.Delete(ctx, key); err != nil {
+		return err
+	}
+
+	return b.cache.Delete(ctx, key)
 }
 
 func (b *Bucket) LoadCache(ctx context.Context) error {
@@ -75,9 +121,10 @@ func (b *Bucket) LoadCache(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	var size int64 = 0
 	for key, object := range buckets {
-		if err := b.cache.Set(ctx, key, object); err != nil {
+		if err := b.cache.Set(ctx, key, &object); err != nil {
 			return err
 		}
 		size += object.Size
@@ -90,23 +137,16 @@ func (b *Bucket) LoadCache(ctx context.Context) error {
 	return nil
 }
 
-func (b *Bucket) ReserveBytes(n int64) error {
-	b.mu.Lock()
-	defer b.mu.Unlock()
+func NewS3(params *StorageParams) (*Bucket, error) {
+	return &Bucket{
+		client:         params.Client,
+		bucketName:     params.BucketName,
+		store:          params.Store,
+		cache:          params.Cache,
+		maxObjectSize:  params.MaxObjectSize,
+		maxBucketSize:  params.MaxBucketSize,
+		publicEndpoint: params.PublicEndpoint,
 
-	if b.maxBucketSize > 0 && b.bucketSize+b.inflight+n > b.maxBucketSize {
-		return ErrBucketTooLarge
-	}
-
-	b.inflight += n
-	return nil
-}
-
-func (b *Bucket) ReleaseBytes(n int64) {
-	b.mu.Lock()
-	b.inflight -= n
-	if b.inflight < 0 {
-		b.inflight = 0
-	}
-	b.mu.Unlock()
+		bucketSize: 0,
+	}, nil
 }

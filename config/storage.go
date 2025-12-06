@@ -3,33 +3,39 @@ package config
 import (
 	"context"
 
+	"app/storage"
 	"app/storage/kv"
 	"app/storage/s3"
 )
 
-func InitStorage(store kv.Store[s3.Object]) s3.Storage {
-	var storage s3.Storage
+func InitStorage(store kv.Store[s3.Object]) storage.ObjectStorage {
+	var storage storage.ObjectStorage
 	var err error
 
 	switch Config.Storage.Type {
 	case "local":
-		storage = s3.NewFS(s3.S3Params{
-			Bucket:         Config.Storage.Local.Root,
+		storage, err = s3.NewFS(&s3.StorageParams{
+			BucketName:     Config.Storage.Local.Root,
 			Store:          store,
+			Cache:          kv.NewMemoryStore[s3.Object](),
 			MaxObjectSize:  Config.Storage.MaxObjectSize,
 			MaxBucketSize:  Config.Storage.MaxBucketSize,
 			PublicEndpoint: Config.Storage.Local.PublicEndpointURL,
 		})
+		if err != nil {
+			panic("error setting up filesystem storage client")
+		}
 	case "remote":
-		storage, err = s3.New(s3.S3Params{
-			Bucket:         Config.Storage.Remote.Bucket,
+		storage, err = s3.NewS3(&s3.StorageParams{
+			BucketName:     Config.Storage.Remote.Bucket,
 			Store:          store,
+			Cache:          kv.NewMemoryStore[s3.Object](),
 			MaxObjectSize:  Config.Storage.MaxObjectSize,
 			MaxBucketSize:  Config.Storage.MaxBucketSize,
 			PublicEndpoint: Config.Storage.Remote.PublicEndpointURL,
 		})
 		if err != nil {
-			panic("error setting up s3 client")
+			panic("error setting up s3 storage client")
 		}
 	default:
 		panic("error unsupported storage type")

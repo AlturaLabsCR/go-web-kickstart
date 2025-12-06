@@ -2,179 +2,104 @@ package s3
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"errors"
-	"fmt"
+	"io"
 	"os"
-	"path/filepath"
-	"strings"
-	"sync"
 	"time"
 
 	"app/storage/kv"
-	"app/utils"
+	"app/storage/s3/reader"
 )
 
-type FileSystem struct {
-	root       string
-	bucketSize int64
+func (fs *FileSystem) PutObject(ctx context.Context, key string, body io.Reader) (object *Object, err error) {
+	objLock := fs.getObjectLock(key)
+	objLock.Lock()
+	defer objLock.Unlock()
 
-	store kv.Store[Object]
-	cache *kv.MemoryStore[Object]
-
-	maxObjectSize int64
-	maxBucketSize int64
-
-	publicEndpoint string
-
-	mu       sync.RWMutex
-	keyLocks sync.Map
-}
-
-func NewFS(params S3Params) *FileSystem {
-	cache := kv.NewMemoryStore[Object]()
-	return &FileSystem{
-		root:           params.Bucket,
-		bucketSize:     0,
-		store:          params.Store,
-		cache:          cache,
-		maxObjectSize:  params.MaxObjectSize,
-		maxBucketSize:  params.MaxBucketSize,
-		publicEndpoint: params.PublicEndpoint,
-	}
-}
-
-func (fs *FileSystem) Put(ctx context.Context, params PutObjectParams) (key, publicURL string, err error) {
-	mime, size, data, err := utils.InspectReader(
-		params.Body,
-		fs.maxObjectSize,
-	)
-	if err != nil {
-		return "", "", err
-	}
-
-	if size > fs.maxObjectSize {
-		return "", "", ErrTooLarge
-	}
-
-	parts := strings.Split(params.Path, "/")
-	filename := parts[len(parts)-1]
-
-	dir := strings.TrimSuffix(params.Path, filename)
-
-	parts = strings.Split(params.Path, ".")
-	ext := parts[len(parts)-1]
-
-	if len(ext) < 31 && ext != "" {
-		ext = "." + ext
-	} else {
-		ext = ""
-	}
-
-	md5sum := md5.Sum(data)
-	md5 := hex.EncodeToString(md5sum[:])
-
-	newKey := dir + md5 + ext
-
-	keyLock := fs.getKeyLock(newKey)
-	keyLock.Lock()
-	defer keyLock.Unlock()
-
+	now := time.Now()
+	created := now
 	var oldSize int64 = 0
 
-	object, err := fs.cache.Get(ctx, newKey)
-	if err != nil {
-		if !errors.Is(err, kv.ErrNotFound) {
-			return "", "", err
-		}
-
-		now := time.Now()
-		object = Object{
-			Bucket:   fs.root,
-			Key:      newKey,
-			Mime:     mime,
-			MD5:      md5,
-			Size:     size,
-			Created:  now,
-			Modified: now,
-		}
+	if obj, err := fs.cache.Get(ctx, key); err == nil {
+		created = obj.Created
+		oldSize = obj.Size
 	} else {
-		if object.MD5 == md5 {
-			return object.Key, fs.publicEndpoint + object.Key, nil
+		if !errors.Is(err, kv.ErrNotFound) {
+			return nil, err
 		}
-
-		oldSize = object.Size
-
-		object.Mime = mime
-		object.MD5 = md5
-		object.Size = size
-		object.Modified = time.Now()
 	}
+
+	r, err := reader.NewObjectReader(ctx, body, fs.makeSizeCallback())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := fs.putObject(key, r); err != nil {
+		return nil, err
+	}
+
+	newSize := r.Size()
 
 	fs.mu.Lock()
-	newSize := fs.bucketSize - oldSize + size
-	if newSize > fs.maxBucketSize {
-		fs.mu.Unlock()
-		return "", "", ErrBucketTooLarge
-	}
-	fs.bucketSize = fs.bucketSize - oldSize + size
+
+	fs.bucketSize -= oldSize
+	fs.bucketSize += newSize
+	fs.inflight -= newSize
+
 	fs.mu.Unlock()
 
-	path, err := fs.objectPath(newKey)
-	if err != nil {
-		return "", "", err
+	object = &Object{
+		Bucket:    fs.root,
+		Key:       key,
+		PublicURL: fs.publicEndpoint + key,
+		Mime:      r.ContentType(),
+		Size:      r.Size(),
+		Modified:  now,
+		Created:   created,
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return "", "", err
+	if err := fs.store.Set(ctx, key, object); err != nil {
+		return nil, err
 	}
 
-	if err := os.WriteFile(path, data, 0o644); err != nil {
-		return "", "", err
+	if err := fs.cache.Set(ctx, key, object); err != nil {
+		return nil, err
 	}
 
-	if err := fs.store.Set(ctx, newKey, object); err != nil {
-		return "", "", err
-	}
-
-	if err := fs.cache.Set(ctx, newKey, object); err != nil {
-		return "", "", err
-	}
-
-	return newKey, fs.publicEndpoint + newKey, err
+	return object, nil
 }
 
-func (fs *FileSystem) Get(ctx context.Context, key string) ([]byte, error) {
-	keyLock := fs.getKeyLock(key)
-	keyLock.Lock()
-	defer keyLock.Unlock()
+func (fs *FileSystem) GetObject(ctx context.Context, key string) (*Object, io.ReadCloser, error) {
+	objLock := fs.getObjectLock(key)
+	objLock.Lock()
+	defer objLock.Unlock()
+
+	obj, err := fs.cache.Get(ctx, key)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	path, err := fs.objectPath(key)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	data, err := os.ReadFile(path)
+	f, err := os.Open(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("file %q not found: %w", key, err)
-		}
-		return nil, err
+		return nil, nil, err
 	}
 
-	return data, nil
+	return obj, f, nil
 }
 
-func (fs *FileSystem) Delete(ctx context.Context, key string) error {
-	keyLock := fs.getKeyLock(key)
+func (fs *FileSystem) DeleteObject(ctx context.Context, key string) error {
+	keyLock := fs.getObjectLock(key)
 	keyLock.Lock()
 	defer keyLock.Unlock()
 
-	object, err := fs.cache.Get(ctx, key)
+	obj, err := fs.cache.Get(ctx, key)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
-			fs.keyLocks.Delete(key)
 			return nil
 		}
 		return err
@@ -185,19 +110,19 @@ func (fs *FileSystem) Delete(ctx context.Context, key string) error {
 		return err
 	}
 
-	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return err
+	if err := os.Remove(path); err == nil {
+		fs.mu.Lock()
+		fs.bucketSize -= obj.Size
+		fs.mu.Unlock()
+	} else {
+		if !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
 	}
-
-	fs.mu.Lock()
-	fs.bucketSize -= object.Size
-	fs.mu.Unlock()
 
 	if err := fs.store.Delete(ctx, key); err != nil {
 		return err
 	}
-
-	fs.keyLocks.Delete(key)
 
 	return fs.cache.Delete(ctx, key)
 }
@@ -209,7 +134,7 @@ func (fs *FileSystem) LoadCache(ctx context.Context) error {
 	}
 	var size int64 = 0
 	for key, object := range objects {
-		if err := fs.cache.Set(ctx, key, object); err != nil {
+		if err := fs.cache.Set(ctx, key, &object); err != nil {
 			return err
 		}
 		size += object.Size
@@ -219,18 +144,15 @@ func (fs *FileSystem) LoadCache(ctx context.Context) error {
 	return nil
 }
 
-func (fs *FileSystem) objectPath(key string) (string, error) {
-	p := filepath.Join(fs.root, key)
-	p = filepath.Clean(p)
+func NewFS(params *StorageParams) (*FileSystem, error) {
+	return &FileSystem{
+		root:           params.BucketName,
+		store:          params.Store,
+		cache:          params.Cache,
+		maxObjectSize:  params.MaxObjectSize,
+		maxBucketSize:  params.MaxBucketSize,
+		publicEndpoint: params.PublicEndpoint,
 
-	root := filepath.Clean(fs.root)
-	if !strings.HasPrefix(p, root+string(os.PathSeparator)) {
-		return "", fmt.Errorf("invalid object key: path escapes bucket root")
-	}
-	return p, nil
-}
-
-func (fs *FileSystem) getKeyLock(key string) *sync.Mutex {
-	lockIface, _ := fs.keyLocks.LoadOrStore(key, &sync.Mutex{})
-	return lockIface.(*sync.Mutex)
+		bucketSize: 0,
+	}, nil
 }

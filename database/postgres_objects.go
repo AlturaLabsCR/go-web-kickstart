@@ -21,30 +21,30 @@ func NewPostgresObjectStore(s *Postgres) *PostgresObjectStore {
 	}
 }
 
-func (p *PostgresObjectStore) Set(ctx context.Context, key string, data s3.Object) error {
+func (p *PostgresObjectStore) Set(ctx context.Context, key string, data *s3.Object) error {
 	return p.Queries.UpsertObject(ctx, db.UpsertObjectParams{
-		ObjectKey:    key,
-		ObjectBucket: data.Bucket,
-		ObjectMime:   data.Mime,
-		ObjectMd5:    data.MD5,
-		ObjectSize:   data.Size,
+		ObjectBucket:    data.Bucket,
+		ObjectKey:       key,
+		ObjectPublicUrl: data.PublicURL,
+		ObjectMime:      data.Mime,
+		ObjectSize:      data.Size,
 	})
 }
 
-func (p *PostgresObjectStore) Get(ctx context.Context, key string) (s3.Object, error) {
+func (p *PostgresObjectStore) Get(ctx context.Context, key string) (*s3.Object, error) {
 	obj, err := p.Queries.SelectObject(ctx, key)
 	if err != nil {
-		return s3.Object{}, err
+		return nil, err
 	}
 
-	return s3.Object{
-		Key:      obj.ObjectKey,
-		Bucket:   obj.ObjectBucket,
-		Mime:     obj.ObjectMime,
-		MD5:      obj.ObjectMd5,
-		Size:     obj.ObjectSize,
-		Created:  obj.ObjectCreated.Time,
-		Modified: obj.ObjectModified.Time,
+	return &s3.Object{
+		Bucket:    obj.ObjectBucket,
+		Key:       obj.ObjectKey,
+		PublicURL: obj.ObjectPublicUrl,
+		Mime:      obj.ObjectMime,
+		Size:      obj.ObjectSize,
+		Created:   obj.ObjectCreated.Time,
+		Modified:  obj.ObjectModified.Time,
 	}, nil
 }
 
@@ -62,13 +62,13 @@ func (p *PostgresObjectStore) GetElems(ctx context.Context) (map[string]s3.Objec
 
 	for _, obj := range dbObjects {
 		obs[obj.ObjectKey] = s3.Object{
-			Key:      obj.ObjectKey,
-			Bucket:   obj.ObjectBucket,
-			Mime:     obj.ObjectMime,
-			MD5:      obj.ObjectMd5,
-			Size:     obj.ObjectSize,
-			Created:  obj.ObjectCreated.Time,
-			Modified: obj.ObjectModified.Time,
+			Bucket:    obj.ObjectBucket,
+			Key:       obj.ObjectKey,
+			PublicURL: obj.ObjectPublicUrl,
+			Mime:      obj.ObjectMime,
+			Size:      obj.ObjectSize,
+			Created:   obj.ObjectCreated.Time,
+			Modified:  obj.ObjectModified.Time,
 		}
 	}
 

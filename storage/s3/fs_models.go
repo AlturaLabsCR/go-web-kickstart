@@ -4,13 +4,10 @@ import (
 	"sync"
 
 	"app/storage/kv"
-
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-type Bucket struct {
-	client         *s3.Client
-	bucketName     string
+type FileSystem struct {
+	root           string
 	publicEndpoint string
 	store          kv.Store[Object]
 	cache          kv.Store[Object]

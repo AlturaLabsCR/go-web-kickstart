@@ -12,8 +12,8 @@ func (e errStr) Error() string {
 const ErrNotFound = errStr("not found")
 
 type Store[T any] interface {
-	Set(ctx context.Context, key string, v T) error
-	Get(ctx context.Context, key string) (T, error)
+	Set(ctx context.Context, key string, v *T) error
+	Get(ctx context.Context, key string) (*T, error)
 	Delete(ctx context.Context, key string) error
 	GetElems(ctx context.Context) (map[string]T, error)
 }

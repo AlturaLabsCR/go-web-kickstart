@@ -9,7 +9,7 @@ import (
 	"app/database"
 	"app/i18n"
 	"app/sessions"
-	"app/storage/s3"
+	"app/storage"
 )
 
 type Handler struct {
@@ -20,7 +20,7 @@ type HandlerParams struct {
 	Production     bool
 	Logger         *slog.Logger
 	Database       database.Database
-	Storage        s3.Storage
+	Storage        storage.ObjectStorage
 	TranslatorFunc i18n.HTTPTranslatorFunc
 	Sessions       *sessions.Store[config.SessionData]
 }
@@ -41,7 +41,7 @@ func (h *Handler) DB() database.Database {
 	return h.params.Database
 }
 
-func (h *Handler) S3() s3.Storage {
+func (h *Handler) S3() storage.ObjectStorage {
 	return h.params.Storage
 }
 

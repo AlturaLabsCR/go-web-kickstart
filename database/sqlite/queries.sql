@@ -27,8 +27,8 @@ DELETE FROM "sessions" WHERE "session_id" = ?;
 INSERT INTO "objects" (
   "object_key",
   "object_bucket",
+  "object_public_url",
   "object_mime",
-  "object_md5",
   "object_size",
   "object_modified"
 ) VALUES (?, ?, ?, ?, ?, (unixepoch('now')))

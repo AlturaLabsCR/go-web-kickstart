@@ -16,25 +16,23 @@ func NewMemoryStore[T any]() *MemoryStore[T] {
 	}
 }
 
-func (m *MemoryStore[T]) Set(_ context.Context, key string, value T) error {
+func (m *MemoryStore[T]) Set(_ context.Context, key string, value *T) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.data[key] = value
+	m.data[key] = *value
 	return nil
 }
 
-func (m *MemoryStore[T]) Get(_ context.Context, key string) (T, error) {
-	var empty T
-
+func (m *MemoryStore[T]) Get(_ context.Context, key string) (*T, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	value, ok := m.data[key]
 	if !ok {
-		return empty, ErrNotFound
+		return nil, ErrNotFound
 	}
 
-	return value, nil
+	return &value, nil
 }
 
 func (m *MemoryStore[T]) Delete(_ context.Context, key string) error {

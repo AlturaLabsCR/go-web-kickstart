@@ -23,7 +23,7 @@ func NewSqliteSessionStore(s *Sqlite) *SqliteSessionStore {
 	}
 }
 
-func (s *SqliteSessionStore) Set(ctx context.Context, sessionID string, session sessions.Session) error {
+func (s *SqliteSessionStore) Set(ctx context.Context, sessionID string, session *sessions.Session) error {
 	return s.Queries.UpsertSession(ctx, db.UpsertSessionParams{
 		SessionID:        sessionID,
 		SessionUser:      session.SessionUser,
@@ -31,18 +31,16 @@ func (s *SqliteSessionStore) Set(ctx context.Context, sessionID string, session 
 	})
 }
 
-func (s *SqliteSessionStore) Get(ctx context.Context, sessionID string) (sessions.Session, error) {
-	empty := sessions.Session{}
-
+func (s *SqliteSessionStore) Get(ctx context.Context, sessionID string) (*sessions.Session, error) {
 	session, err := s.Queries.SelectSession(ctx, sessionID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return empty, kv.ErrNotFound
+			return nil, kv.ErrNotFound
 		}
-		return empty, err
+		return nil, err
 	}
 
-	return sessions.Session{
+	return &sessions.Session{
 		SessionUser: session.SessionUser,
 		CSRFToken:   session.SessionCsrfToken,
 		CreatedAt:   time.Unix(session.SessionCreatedAt, 0),

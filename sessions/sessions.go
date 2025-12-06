@@ -72,7 +72,7 @@ func NewStore[T any](params StoreParams, secure bool) (*Store[T], error) {
 	return &Store[T]{params: params}, nil
 }
 
-func (s *Store[T]) Set(ctx context.Context, w http.ResponseWriter, sessionUser string, sessionData T) error {
+func (s *Store[T]) Set(ctx context.Context, w http.ResponseWriter, sessionUser string, sessionData *T) error {
 	sessionID, err := generateToken()
 	if err != nil {
 		return err
@@ -89,7 +89,7 @@ func (s *Store[T]) Set(ctx context.Context, w http.ResponseWriter, sessionUser s
 
 	now := time.Now()
 
-	return s.params.Store.Set(ctx, sessionID, Session{
+	return s.params.Store.Set(ctx, sessionID, &Session{
 		SessionUser: sessionUser,
 		CSRFToken:   csrfToken,
 		CreatedAt:   now,
@@ -97,10 +97,14 @@ func (s *Store[T]) Set(ctx context.Context, w http.ResponseWriter, sessionUser s
 	})
 }
 
-func (s *Store[T]) refresh(w http.ResponseWriter, r *http.Request, claims *Claims[T], session Session) error {
+func (s *Store[T]) refresh(w http.ResponseWriter, r *http.Request, claims *Claims[T], session *Session) error {
 	ctx := r.Context()
 
-	if _, err := s.refreshAccessTokenCookie(w, claims.SessionID, claims.SessionData); err != nil {
+	if _, err := s.refreshAccessTokenCookie(
+		w,
+		claims.SessionID,
+		&claims.SessionData,
+	); err != nil {
 		return err
 	}
 
@@ -109,7 +113,7 @@ func (s *Store[T]) refresh(w http.ResponseWriter, r *http.Request, claims *Claim
 		return err
 	}
 
-	return s.params.Store.Set(ctx, claims.SessionID, Session{
+	return s.params.Store.Set(ctx, claims.SessionID, &Session{
 		SessionUser: session.SessionUser,
 		CSRFToken:   csrfToken,
 		CreatedAt:   session.CreatedAt,
@@ -117,36 +121,35 @@ func (s *Store[T]) refresh(w http.ResponseWriter, r *http.Request, claims *Claim
 	})
 }
 
-func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (T, error) {
+func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (*T, error) {
 	ctx := r.Context()
-	var empty T
 
 	cookie, err := r.Cookie(s.params.CookiePrefix + AccessTokenKey)
 	if err != nil {
-		return empty, err
+		return nil, err
 	}
 
 	claims, err := s.validateJwt(cookie.Value)
 	if err != nil {
-		return empty, err
+		return nil, err
 	}
 
 	session, err := s.params.Store.Get(ctx, claims.SessionID)
 	if err != nil {
-		return empty, err
+		return nil, err
 	}
 
 	if r.Method != http.MethodGet && r.Method != http.MethodOptions {
 		if t := r.Header.Get(CSRFHeaderKey); t != session.CSRFToken {
-			return empty, fmt.Errorf("invalid CSRF token")
+			return nil, fmt.Errorf("invalid CSRF token")
 		}
 	}
 
 	if err := s.refresh(w, r, claims, session); err != nil {
-		return empty, fmt.Errorf("failed to refresh session")
+		return nil, fmt.Errorf("failed to refresh session")
 	}
 
-	return claims.SessionData, nil
+	return &claims.SessionData, nil
 }
 
 func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
@@ -183,8 +186,8 @@ func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
 	return s.params.Store.Delete(r.Context(), claims.SessionID)
 }
 
-func (s *Store[T]) refreshAccessTokenCookie(w http.ResponseWriter, sessionID string, sessionData T) (string, error) {
-	accessToken, err := s.newJwt(sessionID, sessionData)
+func (s *Store[T]) refreshAccessTokenCookie(w http.ResponseWriter, sessionID string, sessionData *T) (string, error) {
+	accessToken, err := s.newJwt(sessionID, *sessionData)
 	if err != nil {
 		return "", err
 	}
