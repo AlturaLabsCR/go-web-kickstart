@@ -34,23 +34,25 @@ func (b *Bucket) PutObject(ctx context.Context, key string, body io.Reader) (obj
 		return nil, err
 	}
 
-	if err := b.putObject(ctx, key, r); err != nil {
+	err = b.putObject(ctx, key, r)
+	newSize := r.Size()
+
+	b.mu.Lock()
+	b.inflight -= newSize
+	b.mu.Unlock()
+
+	if err != nil {
 		return nil, err
 	}
 
-	if r.Size() > b.maxObjectSize {
+	if newSize > b.maxObjectSize {
 		b.deleteObject(ctx, key)
 		return nil, ErrObjectTooLarge
 	}
 
-	newSize := r.Size()
-
 	b.mu.Lock()
-
 	b.bucketSize -= oldSize
 	b.bucketSize += newSize
-	b.inflight -= newSize
-
 	b.mu.Unlock()
 
 	object = &Object{

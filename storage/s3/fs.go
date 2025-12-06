@@ -34,23 +34,25 @@ func (fs *FileSystem) PutObject(ctx context.Context, key string, body io.Reader)
 		return nil, err
 	}
 
-	if err := fs.putObject(key, r); err != nil {
+	err = fs.putObject(key, r)
+	newSize := r.Size()
+
+	fs.mu.Lock()
+	fs.inflight -= newSize
+	fs.mu.Unlock()
+
+	if err != nil {
 		return nil, err
 	}
 
-	if r.Size() > fs.maxObjectSize {
+	if newSize > fs.maxObjectSize {
 		fs.deleteObject(ctx, key)
 		return nil, ErrObjectTooLarge
 	}
 
-	newSize := r.Size()
-
 	fs.mu.Lock()
-
 	fs.bucketSize -= oldSize
 	fs.bucketSize += newSize
-	fs.inflight -= newSize
-
 	fs.mu.Unlock()
 
 	object = &Object{
@@ -134,7 +136,10 @@ func (fs *FileSystem) LoadCache(ctx context.Context) error {
 		}
 		size += object.Size
 	}
+
+	fs.mu.Lock()
 	fs.bucketSize = size
+	fs.mu.Unlock()
 
 	return nil
 }
