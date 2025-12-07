@@ -4,6 +4,7 @@ package s3
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
@@ -91,9 +92,8 @@ func (b *Bucket) DeleteObject(ctx context.Context, key string) error {
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
 	if err := b.deleteObject(ctx, key); err == nil {
@@ -117,15 +117,18 @@ func (b *Bucket) LoadCache(ctx context.Context) error {
 
 	var size int64 = 0
 	for key, object := range buckets {
-		if err := b.cache.Set(ctx, key, &object); err != nil {
+		objCopy := object
+		if err := b.cache.Set(ctx, key, &objCopy); err != nil {
 			return err
 		}
-		size += object.Size
+		size += objCopy.Size
 	}
 
-	b.mu.Lock()
 	b.bucketSize = size
-	b.mu.Unlock()
+
+	elems, _ := b.cache.GetElems(ctx)
+
+	fmt.Printf("LOADED CACHE: %#v", elems)
 
 	return nil
 }

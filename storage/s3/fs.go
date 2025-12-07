@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os"
 	"time"
 
 	"app/storage/kv"
@@ -96,13 +95,9 @@ func (fs *FileSystem) DeleteObject(ctx context.Context, key string) error {
 	}
 
 	if err := fs.deleteObject(ctx, key); err == nil {
-		fs.mu.Lock()
-		fs.bucketSize -= obj.Size
-		fs.mu.Unlock()
+		fs.commit(0, obj.Size)
 	} else {
-		if !errors.Is(err, os.ErrNotExist) {
-			return err
-		}
+		return err
 	}
 
 	if err := fs.store.Delete(ctx, key); err != nil {
@@ -119,15 +114,14 @@ func (fs *FileSystem) LoadCache(ctx context.Context) error {
 	}
 	var size int64 = 0
 	for key, object := range objects {
-		if err := fs.cache.Set(ctx, key, &object); err != nil {
+		objCopy := object
+		if err := fs.cache.Set(ctx, key, &objCopy); err != nil {
 			return err
 		}
-		size += object.Size
+		size += objCopy.Size
 	}
 
-	fs.mu.Lock()
 	fs.bucketSize = size
-	fs.mu.Unlock()
 
 	return nil
 }

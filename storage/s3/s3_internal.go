@@ -18,12 +18,15 @@ func (b *Bucket) putObject(ctx context.Context, key string, body io.Reader) erro
 	return err
 }
 
-func (b *Bucket) getObject(ctx context.Context, key string) (body io.ReadCloser, err error) {
+func (b *Bucket) getObject(ctx context.Context, key string) (io.ReadCloser, error) {
 	out, err := b.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(b.bucketName),
 		Key:    aws.String(key),
 	})
-	return out.Body, err
+	if err != nil {
+		return nil, err
+	}
+	return out.Body, nil
 }
 
 func (b *Bucket) deleteObject(ctx context.Context, key string) (err error) {
