@@ -4,7 +4,6 @@ package s3
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"time"
 
@@ -118,17 +117,15 @@ func (b *Bucket) LoadCache(ctx context.Context) error {
 	var size int64 = 0
 	for key, object := range buckets {
 		objCopy := object
+
 		if err := b.cache.Set(ctx, key, &objCopy); err != nil {
 			return err
 		}
+
 		size += objCopy.Size
 	}
 
 	b.bucketSize = size
-
-	elems, _ := b.cache.GetElems(ctx)
-
-	fmt.Printf("LOADED CACHE: %#v", elems)
 
 	return nil
 }

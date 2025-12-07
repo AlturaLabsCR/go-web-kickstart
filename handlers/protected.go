@@ -16,6 +16,9 @@ func (h *Handler) ProtectedPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tr := h.Translator(r)
 
+	val := ctx.Value(sessionDataCtxKey)
+	h.Log().Debug("session.data", "value", val)
+
 	content := templates.Protected(tr)
 
 	templates.Base(content, templates.BaseTemplateParams{
