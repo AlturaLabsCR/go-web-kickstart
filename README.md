@@ -13,13 +13,12 @@ make live  # live reload on change of templates, schema, css classes, etc
 make clean
 ```
 
-## Deployments
+## Deploy
 
 ```sh
-# railway-compatible Dockerfile
 docker compose up
 
-# or try with a database
+# or sidecar a database
 docker compose -f docker-compose.db.yml --profile [postgres/sqlite] up
 ```
 
