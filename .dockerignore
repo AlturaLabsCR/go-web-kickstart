@@ -1,3 +1,4 @@
+.git*
 database/**/db
 database/.gen
 *_templ.go
