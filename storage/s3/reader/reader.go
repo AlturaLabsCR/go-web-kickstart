@@ -14,77 +14,39 @@ func (e errStr) Error() string {
 	return string(e)
 }
 
-const ErrOverflow = errStr("reader overflow")
+const (
+	ErrOverflow = errStr("object exceeds maximum allowed size")
+	ErrCanceled = errStr("read canceled by context")
+)
 
-type ObjectReaderCallback func(total int64) bool
+func NewObjectReader(ctx context.Context, r io.Reader, maxBytes int64) (*bytes.Reader, string, error) {
+	limit := maxBytes + 1
 
-type ObjectReader struct {
-	r        io.Reader
-	ctx      context.Context
-	ct       string
-	size     int64
-	callback ObjectReaderCallback
-	stopped  bool
+	rd := &ctxReader{ctx: ctx, r: r}
+
+	data, err := io.ReadAll(io.LimitReader(rd, limit))
+	if err != nil {
+		return nil, "", err
+	}
+
+	if int64(len(data)) > maxBytes {
+		return nil, "", ErrOverflow
+	}
+
+	detectSize := min(len(data), 512)
+	ct := http.DetectContentType(data[:detectSize])
+
+	return bytes.NewReader(data), ct, nil
 }
 
-func (o *ObjectReader) ContentType() string { return o.ct }
-
-func (o *ObjectReader) Size() int64 { return o.size }
-
-func (o *ObjectReader) Read(p []byte) (int, error) {
-	if o.stopped {
-		return 0, ErrOverflow
-	}
-
-	if err := o.ctx.Err(); err != nil {
-		o.stopped = true
-		return 0, ErrOverflow
-	}
-
-	for {
-		n, err := o.r.Read(p)
-
-		if n > 0 {
-			o.size += int64(n)
-
-			if o.callback != nil && !o.callback(o.size) {
-				o.stopped = true
-				return n, ErrOverflow
-			}
-
-			return n, err
-		}
-
-		if err != nil {
-			if err == io.EOF {
-				return 0, io.EOF
-			}
-			return 0, err
-		}
-	}
+type ctxReader struct {
+	ctx context.Context
+	r   io.Reader
 }
 
-func NewObjectReader(ctx context.Context, r io.Reader, cb ObjectReaderCallback) (*ObjectReader, error) {
-	const sniffLen = 512
-	buf := make([]byte, sniffLen)
-
-	n, err := r.Read(buf)
-	if n < 0 {
-		n = 0
+func (cr *ctxReader) Read(p []byte) (int, error) {
+	if err := cr.ctx.Err(); err != nil {
+		return 0, ErrCanceled
 	}
-	if err != nil && err != io.EOF {
-		return nil, err
-	}
-
-	ct := http.DetectContentType(buf[:n])
-
-	rr := io.MultiReader(bytes.NewReader(buf[:n]), r)
-
-	return &ObjectReader{
-		r:        rr,
-		ctx:      ctx,
-		ct:       ct,
-		size:     0,
-		callback: cb,
-	}, nil
+	return cr.r.Read(p)
 }

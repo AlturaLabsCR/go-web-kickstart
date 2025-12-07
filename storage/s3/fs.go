@@ -29,40 +29,25 @@ func (fs *FileSystem) PutObject(ctx context.Context, key string, body io.Reader)
 		}
 	}
 
-	r, err := reader.NewObjectReader(ctx, body, fs.makeSizeCallback())
+	r, ct, err := reader.NewObjectReader(ctx, body, fs.remaining())
 	if err != nil {
 		return nil, err
 	}
 
-	err = fs.putObject(key, r)
 	newSize := r.Size()
 
-	fs.mu.Lock()
-	fs.inflight -= newSize
-	fs.bucketSize -= oldSize
-	fs.bucketSize += newSize
-	fs.mu.Unlock()
-
-	if err != nil {
+	fs.reserve(newSize)
+	if err := fs.putObject(ctx, key, r); err != nil {
+		fs.release(newSize)
 		return nil, err
 	}
-
-	if newSize > fs.maxObjectSize {
-		if err := fs.deleteObject(ctx, key); err != nil {
-			return nil, err
-		}
-
-		fs.mu.Lock()
-		fs.bucketSize -= newSize
-		fs.mu.Unlock()
-		return nil, ErrObjectTooLarge
-	}
+	fs.commit(newSize, oldSize)
 
 	object = &Object{
 		Bucket:    fs.root,
 		Key:       key,
 		PublicURL: fs.publicEndpoint + key,
-		Mime:      r.ContentType(),
+		Mime:      ct,
 		Size:      newSize,
 		Modified:  now,
 		Created:   created,

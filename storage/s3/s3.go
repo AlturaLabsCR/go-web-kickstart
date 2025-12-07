@@ -29,41 +29,25 @@ func (b *Bucket) PutObject(ctx context.Context, key string, body io.Reader) (obj
 		}
 	}
 
-	r, err := reader.NewObjectReader(ctx, body, b.makeSizeCallback())
+	r, ct, err := reader.NewObjectReader(ctx, body, b.remaining())
 	if err != nil {
 		return nil, err
 	}
 
-	err = b.putObject(ctx, key, r)
 	newSize := r.Size()
 
-	b.mu.Lock()
-	b.inflight -= newSize
-	b.bucketSize -= oldSize
-	b.bucketSize += newSize
-	b.mu.Unlock()
-
-	if err != nil {
+	b.reserve(newSize)
+	if err := b.putObject(ctx, key, r); err != nil {
+		b.release(newSize)
 		return nil, err
 	}
-
-	if newSize > b.maxObjectSize {
-		if err := b.deleteObject(ctx, key); err != nil {
-			return nil, err
-		}
-
-		b.mu.Lock()
-		b.bucketSize -= newSize
-		b.mu.Unlock()
-
-		return nil, ErrObjectTooLarge
-	}
+	b.commit(newSize, oldSize)
 
 	object = &Object{
 		Bucket:    b.bucketName,
 		Key:       key,
 		PublicURL: b.publicEndpoint + key,
-		Mime:      r.ContentType(),
+		Mime:      ct,
 		Size:      newSize,
 		Modified:  now,
 		Created:   created,
@@ -113,9 +97,7 @@ func (b *Bucket) DeleteObject(ctx context.Context, key string) error {
 	}
 
 	if err := b.deleteObject(ctx, key); err == nil {
-		b.mu.Lock()
-		b.bucketSize -= obj.Size
-		b.mu.Unlock()
+		b.commit(0, obj.Size)
 	} else {
 		return err
 	}

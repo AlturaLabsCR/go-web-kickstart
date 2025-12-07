@@ -8,11 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-
-	"app/storage/s3/reader"
 )
 
-func (fs *FileSystem) putObject(key string, body io.Reader) error {
+func (fs *FileSystem) putObject(_ context.Context, key string, body io.Reader) error {
 	path, err := fs.objectPath(key)
 	if err != nil {
 		return err
@@ -28,13 +26,7 @@ func (fs *FileSystem) putObject(key string, body io.Reader) error {
 	}
 	defer f.Close()
 
-	rc, ok := body.(io.ReadCloser)
-	if !ok {
-		rc = io.NopCloser(body)
-	}
-	defer rc.Close()
-
-	if _, err := io.Copy(f, rc); err != nil {
+	if _, err := io.Copy(f, body); err != nil {
 		return err
 	}
 
@@ -68,32 +60,6 @@ func (fs *FileSystem) deleteObject(_ context.Context, key string) error {
 	return nil
 }
 
-func (fs *FileSystem) makeSizeCallback() reader.ObjectReaderCallback {
-	var lastSize int64
-
-	return func(total int64) bool {
-		delta := total - lastSize
-		lastSize = total
-
-		fs.mu.Lock()
-		newInflight := fs.inflight + delta
-
-		if fs.maxBucketSize > 0 && (fs.bucketSize+newInflight) > fs.maxBucketSize {
-			fs.mu.Unlock()
-			return false
-		}
-
-		fs.inflight = newInflight
-		fs.mu.Unlock()
-
-		if fs.maxObjectSize > 0 && total > fs.maxObjectSize {
-			return false
-		}
-
-		return true
-	}
-}
-
 func (fs *FileSystem) getObjectLock(key string) *sync.Mutex {
 	lockIface, _ := fs.objectLocks.LoadOrStore(key, &sync.Mutex{})
 	return lockIface.(*sync.Mutex)
@@ -108,4 +74,30 @@ func (fs *FileSystem) objectPath(key string) (string, error) {
 		return "", fmt.Errorf("invalid object key: path escapes bucket root")
 	}
 	return p, nil
+}
+
+func (fs *FileSystem) remaining() int64 {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	return min(fs.maxObjectSize, fs.maxBucketSize-fs.bucketSize-fs.inflight)
+}
+
+func (fs *FileSystem) reserve(bytes int64) {
+	fs.mu.Lock()
+	fs.inflight += bytes
+	fs.mu.Unlock()
+}
+
+func (fs *FileSystem) release(bytes int64) {
+	fs.mu.Lock()
+	fs.inflight -= bytes
+	fs.mu.Unlock()
+}
+
+func (fs *FileSystem) commit(newBytes, oldBytes int64) {
+	fs.mu.Lock()
+	fs.inflight -= newBytes
+	fs.bucketSize -= oldBytes
+	fs.bucketSize += newBytes
+	fs.mu.Unlock()
 }
