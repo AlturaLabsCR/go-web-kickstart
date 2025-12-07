@@ -10,7 +10,7 @@
 # - ./config.toml
 #
 # Environment variables have precedence over any config.toml file, see
-# `example.env` for the override environment variable names
+# `contrib/example.env` for the override environment variable names
 
 [App]
 # Port = "8080"   # app port, this is the docker exposed port too
