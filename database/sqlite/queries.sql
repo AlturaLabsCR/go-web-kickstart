@@ -51,3 +51,22 @@ DELETE FROM "objects" WHERE "object_key" = ?;
 INSERT INTO "users" ("user_id")
 VALUES (?)
 ON CONFLICT DO NOTHING;
+
+-- name: InsertPermission :exec
+INSERT INTO "permissions" ("permission_name") VALUES (?);
+
+-- name: InsertRole :exec
+INSERT INTO "roles" ("role_name") VALUES (?);
+
+-- name: InsertRolePermission :exec
+INSERT INTO "role_permissions" (
+  "role_permission_role",
+  "role_permission_permission"
+) VALUES (?, ?);
+
+-- name: GetPermissions :many
+SELECT DISTINCT rp."role_permission_permission"
+FROM "user_roles" ur
+JOIN "role_permissions" rp
+ON rp."role_permission_role" = ur."user_role_role"
+WHERE ur."user_role_user" = ?;

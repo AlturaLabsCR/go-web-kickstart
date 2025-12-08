@@ -20,3 +20,23 @@ CREATE TABLE IF NOT EXISTS "objects" (
   "object_created" TIMESTAMP NOT NULL DEFAULT NOW(),
   "object_modified" TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS "permissions" (
+  "permission_name" VARCHAR(32) PRIMARY KEY NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "roles" (
+  "role_name" VARCHAR(32) PRIMARY KEY
+);
+
+CREATE TABLE "role_permissions" (
+  "role_permission_role" VARCHAR(32) REFERENCES "roles"("role_name") ON DELETE CASCADE,
+  "role_permission_permission" VARCHAR(32) REFERENCES "permissions"("permission_name") ON DELETE CASCADE,
+  PRIMARY KEY ("role_permission_role", "role_permission_permission")
+);
+
+CREATE TABLE "user_roles" (
+  "user_role_user" TEXT REFERENCES "users"("user_id") ON DELETE CASCADE,
+  "user_role_role" VARCHAR(32) REFERENCES "roles"("role_name") ON DELETE CASCADE,
+  PRIMARY KEY ("user_role_user", "user_role_role")
+);
