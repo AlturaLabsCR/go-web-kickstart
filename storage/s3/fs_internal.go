@@ -24,12 +24,13 @@ func (fs *FileSystem) putObject(_ context.Context, key string, body io.Reader) e
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); err == nil {
+			err = cerr
+		}
+	}()
 
-	if _, err := io.Copy(f, body); err != nil {
-		return err
-	}
-
+	_, err = io.Copy(f, body)
 	return nil
 }
 
