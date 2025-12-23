@@ -117,7 +117,9 @@ func Init() {
 		}
 	}
 
-	godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		panic(fmt.Sprintf("error loading env files: %v", err))
+	}
 
 	overrideWithEnv(envPrefix, &Config)
 
@@ -179,7 +181,9 @@ func overrideAWS(target *AWS) {
 		switch field.Kind() {
 		case reflect.String:
 			if val := field.String(); val != "" {
-				os.Setenv(tag, val)
+				if err := os.Setenv(tag, val); err != nil {
+					panic(fmt.Sprintf("error overriding AWS config: %v", err))
+				}
 			}
 		}
 	}
