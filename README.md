@@ -40,7 +40,7 @@ useradd -s /bin/bash -m -d /var/lib/app app
 ### App's configuration
 
 ```sh
-curl -L "https://raw.githubusercontent.com/AlturaLabsCR/go-web-kickstart/refs/heads/main/config.toml" -o /etc/app/config.toml
+curl -L "https://raw.githubusercontent.com/AlturaLabsCR/go-web-kickstart/refs/heads/main/contrib/config.toml" -o /etc/app/config.toml
 ```
 
 ### App's data (only if using sqlite and/or storage Type=local)
