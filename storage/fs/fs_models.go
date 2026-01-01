@@ -1,16 +1,13 @@
-package s3
+package fs
 
 import (
 	"sync"
 
 	"app/cache"
-
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-type S3Bucket struct {
-	client        *s3.Client
-	bucketName    string
+type FS struct {
+	root          string
 	cache         cache.Cache
 	l2cache       cache.Cache
 	maxObjectSize int64
@@ -23,9 +20,8 @@ type S3Bucket struct {
 	inflight   int64
 }
 
-type S3Params struct {
-	Client        *s3.Client
-	BucketName    string
+type FSParams struct {
+	Root          string
 	Cache         cache.Cache
 	MaxObjectSize int64
 	MaxBucketSize int64

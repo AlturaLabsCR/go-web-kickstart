@@ -5,11 +5,15 @@ import (
 	"io"
 	"sync"
 
+	"app/storage"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-func (b *Bucket) putObject(ctx context.Context, key string, body io.Reader) error {
+var _ storage.ObjectStorage = (*S3Bucket)(nil)
+
+func (b *S3Bucket) putObject(ctx context.Context, key string, body io.Reader) error {
 	_, err := b.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(b.bucketName),
 		Key:    aws.String(key),
@@ -18,7 +22,7 @@ func (b *Bucket) putObject(ctx context.Context, key string, body io.Reader) erro
 	return err
 }
 
-func (b *Bucket) getObject(ctx context.Context, key string) (io.ReadCloser, error) {
+func (b *S3Bucket) getObject(ctx context.Context, key string) (io.ReadCloser, error) {
 	out, err := b.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(b.bucketName),
 		Key:    aws.String(key),
@@ -29,7 +33,7 @@ func (b *Bucket) getObject(ctx context.Context, key string) (io.ReadCloser, erro
 	return out.Body, nil
 }
 
-func (b *Bucket) deleteObject(ctx context.Context, key string) (err error) {
+func (b *S3Bucket) deleteObject(ctx context.Context, key string) (err error) {
 	_, err = b.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(b.bucketName),
 		Key:    aws.String(key),
@@ -37,30 +41,36 @@ func (b *Bucket) deleteObject(ctx context.Context, key string) (err error) {
 	return err
 }
 
-func (b *Bucket) getObjectLock(key string) *sync.Mutex {
+func (b *S3Bucket) getObjectLock(key string) *sync.Mutex {
 	lockIface, _ := b.objectLocks.LoadOrStore(key, &sync.Mutex{})
 	return lockIface.(*sync.Mutex)
 }
 
-func (b *Bucket) remaining() int64 {
+func (b *S3Bucket) remaining() int64 {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return min(b.maxObjectSize, b.maxBucketSize-b.bucketSize-b.inflight)
+
+	rem := b.maxBucketSize - b.bucketSize - b.inflight
+	if rem <= 0 {
+		return 0
+	}
+
+	return min(b.maxObjectSize, rem)
 }
 
-func (b *Bucket) reserve(bytes int64) {
+func (b *S3Bucket) reserve(bytes int64) {
 	b.mu.Lock()
 	b.inflight += bytes
 	b.mu.Unlock()
 }
 
-func (b *Bucket) release(bytes int64) {
+func (b *S3Bucket) release(bytes int64) {
 	b.mu.Lock()
 	b.inflight -= bytes
 	b.mu.Unlock()
 }
 
-func (b *Bucket) commit(newBytes, oldBytes int64) {
+func (b *S3Bucket) commit(newBytes, oldBytes int64) {
 	b.mu.Lock()
 	b.inflight -= newBytes
 	b.bucketSize -= oldBytes

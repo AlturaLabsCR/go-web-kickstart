@@ -1,5 +1,5 @@
-// Package s3 implements 'ObjectStorage' interface with an S3 backend
-package s3
+// Package fs implements 'ObjectStorage' interface with a filesystem backend
+package fs
 
 import (
 	"context"
@@ -12,10 +12,9 @@ import (
 	"app/storage/reader"
 )
 
-func NewS3(params *S3Params) (*S3Bucket, error) {
-	return &S3Bucket{
-		client:        params.Client,
-		bucketName:    params.BucketName,
+func NewFS(params *FSParams) (*FS, error) {
+	return &FS{
+		root:          params.Root,
 		cache:         params.Cache,
 		l2cache:       params.L2Cache,
 		maxObjectSize: params.MaxObjectSize,
@@ -24,8 +23,8 @@ func NewS3(params *S3Params) (*S3Bucket, error) {
 	}, nil
 }
 
-func (b *S3Bucket) PutObject(ctx context.Context, key string, body io.Reader) (*storage.Object, error) {
-	objLock := b.getObjectLock(key)
+func (fs *FS) PutObject(ctx context.Context, key string, body io.Reader) (*storage.Object, error) {
+	objLock := fs.getObjectLock(key)
 	objLock.Lock()
 	defer objLock.Unlock()
 
@@ -33,8 +32,8 @@ func (b *S3Bucket) PutObject(ctx context.Context, key string, body io.Reader) (*
 	created := now
 	var oldSize int64 = 0
 
-	if s, err := b.cache.Get(ctx, key); err == nil {
-		if o, err := storage.StringToObject(s); err == nil {
+	if objStr, err := fs.cache.Get(ctx, key); err == nil {
+		if o, err := storage.StringToObject(objStr); err == nil {
 			created = o.Created
 			oldSize = o.Size
 		} else {
@@ -46,7 +45,7 @@ func (b *S3Bucket) PutObject(ctx context.Context, key string, body io.Reader) (*
 		}
 	}
 
-	rem := b.remaining()
+	rem := fs.remaining()
 	if rem <= 0 {
 		return nil, storage.ErrBucketTooLarge
 	}
@@ -62,7 +61,7 @@ func (b *S3Bucket) PutObject(ctx context.Context, key string, body io.Reader) (*
 	newSize := r.Size()
 
 	obj := &storage.Object{
-		Bucket:   b.bucketName,
+		Bucket:   fs.root,
 		Key:      key,
 		Mime:     ct,
 		Size:     newSize,
@@ -75,19 +74,19 @@ func (b *S3Bucket) PutObject(ctx context.Context, key string, body io.Reader) (*
 		return nil, err
 	}
 
-	b.reserve(newSize)
-	if err := b.putObject(ctx, key, r); err != nil {
-		b.release(newSize)
+	fs.reserve(newSize)
+	if err := fs.putObject(ctx, key, r); err != nil {
+		fs.release(newSize)
 		return nil, err
 	}
-	b.commit(newSize, oldSize)
+	fs.commit(newSize, oldSize)
 
-	if err := b.cache.Set(ctx, key, objStr); err != nil {
+	if err := fs.cache.Set(ctx, key, objStr); err != nil {
 		return nil, err
 	}
 
-	if b.l2cache != nil {
-		if err := b.l2cache.Set(ctx, key, objStr); err != nil {
+	if fs.l2cache != nil {
+		if err := fs.l2cache.Set(ctx, key, objStr); err != nil {
 			return nil, err
 		}
 	}
@@ -95,12 +94,12 @@ func (b *S3Bucket) PutObject(ctx context.Context, key string, body io.Reader) (*
 	return obj, nil
 }
 
-func (b *S3Bucket) GetObject(ctx context.Context, key string) (*storage.Object, io.ReadCloser, error) {
-	objLock := b.getObjectLock(key)
+func (fs *FS) GetObject(ctx context.Context, key string) (*storage.Object, io.ReadCloser, error) {
+	objLock := fs.getObjectLock(key)
 	objLock.Lock()
 	defer objLock.Unlock()
 
-	objStr, err := b.cache.Get(ctx, key)
+	objStr, err := fs.cache.Get(ctx, key)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -110,7 +109,7 @@ func (b *S3Bucket) GetObject(ctx context.Context, key string) (*storage.Object, 
 		return nil, nil, err
 	}
 
-	body, err := b.getObject(ctx, key)
+	body, err := fs.getObject(ctx, key)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -118,12 +117,12 @@ func (b *S3Bucket) GetObject(ctx context.Context, key string) (*storage.Object, 
 	return obj, body, nil
 }
 
-func (b *S3Bucket) DeleteObject(ctx context.Context, key string) error {
-	objLock := b.getObjectLock(key)
+func (fs *FS) DeleteObject(ctx context.Context, key string) error {
+	objLock := fs.getObjectLock(key)
 	objLock.Lock()
 	defer objLock.Unlock()
 
-	objStr, err := b.cache.Get(ctx, key)
+	objStr, err := fs.cache.Get(ctx, key)
 	if err != nil {
 		if errors.Is(err, cache.ErrNotFound) {
 			return nil
@@ -136,25 +135,25 @@ func (b *S3Bucket) DeleteObject(ctx context.Context, key string) error {
 		return err
 	}
 
-	if err := b.deleteObject(ctx, key); err == nil {
-		b.commit(0, obj.Size)
+	if err := fs.deleteObject(ctx, key); err == nil {
+		fs.commit(0, obj.Size)
 	} else {
 		return err
 	}
 
-	if b.l2cache != nil {
-		_ = b.l2cache.Del(ctx, key)
+	if fs.l2cache != nil {
+		_ = fs.l2cache.Del(ctx, key)
 	}
 
-	return b.cache.Del(ctx, key)
+	return fs.cache.Del(ctx, key)
 }
 
-func (b *S3Bucket) LoadCache(ctx context.Context) error {
-	if b.l2cache == nil {
+func (fs *FS) LoadCache(ctx context.Context) error {
+	if fs.l2cache == nil {
 		return storage.ErrBadCache
 	}
 
-	values, err := b.l2cache.GetAll(ctx)
+	values, err := fs.l2cache.GetAll(ctx)
 	if err != nil {
 		return err
 	}
@@ -167,16 +166,16 @@ func (b *S3Bucket) LoadCache(ctx context.Context) error {
 			return err
 		}
 
-		if err := b.cache.Set(ctx, key, val); err != nil {
+		if err := fs.cache.Set(ctx, key, val); err != nil {
 			return err
 		}
 
 		total += obj.Size
 	}
 
-	b.mu.Lock()
-	b.bucketSize = total
-	b.mu.Unlock()
+	fs.mu.Lock()
+	fs.bucketSize = total
+	fs.mu.Unlock()
 
 	return nil
 }

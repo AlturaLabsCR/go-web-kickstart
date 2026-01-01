@@ -1,64 +1,64 @@
-// Package sessions handles user authorization and authentication
+// Package sessions
 package sessions
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"time"
 
-	"app/storage/kv"
+	"app/cache"
 )
 
 const (
 	AccessTokenKey = "access_token"
 	CSRFTokenKey   = "csrf_token"
 	CSRFHeaderKey  = "X-CSRF-Token"
+
+	ErrBadCache = errStr("invalid cache")
 )
 
 type Session struct {
 	SessionUser string
 	CSRFToken   string
-	CreatedAt   time.Time
-	LastUsedAt  time.Time
+	CreatedAt   int64
+	LastUsedAt  int64
 }
 
 type StoreParams struct {
-	SessionTTL time.Duration // defaults to 24 * 30 * time.Hour
+	Cache   cache.Cache
+	L2Cache cache.Cache // optional
 
-	CookiePath     string        // defaults to '/'
 	CookiePrefix   string        // defaults to 'session.'
+	CookiePath     string        // defaults to '/'
+	SessionTTL     time.Duration // defaults to time.Hour * 24 * 30 = 1m
 	CookieSameSite http.SameSite // defaults tu http.SameSiteLaxMode
-
-	Store       kv.Store[Session] // defaults to memory store
-	StoreSecret string            // defaults to generated string
+	StoreSecret    string        // defaults to generated string
 }
 
-type Store[T any] struct {
+type SessionStore[T any] struct {
 	params StoreParams
 }
 
-func NewStore[T any](params StoreParams, secure bool) (*Store[T], error) {
-	if params.SessionTTL == 0 {
-		params.SessionTTL = 24 * 30 * time.Hour
-	}
-
-	if params.CookiePath == "" {
-		params.CookiePath = "/"
+func NewStore[T any](params StoreParams, secure bool) (*SessionStore[T], error) {
+	if params.Cache == nil {
+		return nil, ErrBadCache
 	}
 
 	if params.CookiePrefix == "" {
 		params.CookiePrefix = "session."
 	}
 
-	if params.CookieSameSite == 0 {
-		params.CookieSameSite = http.SameSiteLaxMode
+	if params.CookiePath == "" {
+		params.CookiePath = "/"
 	}
 
-	if params.Store == nil {
-		params.Store = kv.NewMemoryStore[Session]()
+	if params.SessionTTL == 0 {
+		params.SessionTTL = time.Hour * 24 * 30
+	}
+
+	if params.CookieSameSite == 0 {
+		params.CookieSameSite = http.SameSiteLaxMode
 	}
 
 	if params.StoreSecret == "" {
@@ -69,10 +69,10 @@ func NewStore[T any](params StoreParams, secure bool) (*Store[T], error) {
 		params.StoreSecret = s
 	}
 
-	return &Store[T]{params: params}, nil
+	return &SessionStore[T]{params: params}, nil
 }
 
-func (s *Store[T]) Set(ctx context.Context, w http.ResponseWriter, sessionUser string, sessionData *T) error {
+func (s *SessionStore[T]) Set(ctx context.Context, w http.ResponseWriter, sessionUser string, sessionData *T) error {
 	sessionID, err := generateToken()
 	if err != nil {
 		return err
@@ -87,41 +87,28 @@ func (s *Store[T]) Set(ctx context.Context, w http.ResponseWriter, sessionUser s
 		return err
 	}
 
-	now := time.Now()
+	now := time.Now().Unix()
 
-	return s.params.Store.Set(ctx, sessionID, &Session{
+	session := &Session{
 		SessionUser: sessionUser,
 		CSRFToken:   csrfToken,
 		CreatedAt:   now,
 		LastUsedAt:  now,
-	})
-}
-
-func (s *Store[T]) refresh(w http.ResponseWriter, r *http.Request, claims *Claims[T], session *Session) error {
-	ctx := r.Context()
-
-	if _, err := s.refreshAccessTokenCookie(
-		w,
-		claims.SessionID,
-		&claims.SessionData,
-	); err != nil {
-		return err
 	}
 
-	csrfToken, err := s.refreshCSRFCookie(w)
+	sessionStr, err := sessionToString(session)
 	if err != nil {
 		return err
 	}
 
-	return s.params.Store.Set(ctx, claims.SessionID, &Session{
-		SessionUser: session.SessionUser,
-		CSRFToken:   csrfToken,
-		CreatedAt:   session.CreatedAt,
-		LastUsedAt:  time.Now(),
-	})
+	if s.params.L2Cache != nil {
+		_ = s.params.L2Cache.Set(ctx, sessionID, sessionStr)
+	}
+
+	return s.params.Cache.Set(ctx, sessionID, sessionStr)
 }
 
-func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (*T, error) {
+func (s *SessionStore[T]) Validate(w http.ResponseWriter, r *http.Request) (*T, error) {
 	ctx := r.Context()
 
 	cookie, err := r.Cookie(s.params.CookiePrefix + AccessTokenKey)
@@ -134,7 +121,12 @@ func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (*T, error) 
 		return nil, err
 	}
 
-	session, err := s.params.Store.Get(ctx, claims.SessionID)
+	sessionStr, err := s.params.Cache.Get(ctx, claims.SessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	session, err := stringToSession(sessionStr)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +144,7 @@ func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (*T, error) 
 	return &claims.SessionData, nil
 }
 
-func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
+func (s *SessionStore[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
 	cookie, err := r.Cookie(s.params.CookiePrefix + AccessTokenKey)
 	if err != nil {
 		return err
@@ -183,51 +175,9 @@ func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
 		Secure:   true,
 	})
 
-	return s.params.Store.Delete(r.Context(), claims.SessionID)
-}
-
-func (s *Store[T]) refreshAccessTokenCookie(w http.ResponseWriter, sessionID string, sessionData *T) (string, error) {
-	accessToken, err := s.newJwt(sessionID, *sessionData)
-	if err != nil {
-		return "", err
+	if s.params.L2Cache != nil {
+		_ = s.params.L2Cache.Del(r.Context(), claims.SessionID)
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     s.params.CookiePrefix + AccessTokenKey,
-		Path:     s.params.CookiePath,
-		SameSite: s.params.CookieSameSite,
-		Expires:  time.Now().Add(s.params.SessionTTL),
-		Value:    accessToken,
-		HttpOnly: true,
-		Secure:   true,
-	})
-
-	return accessToken, nil
-}
-
-func (s *Store[T]) refreshCSRFCookie(w http.ResponseWriter) (string, error) {
-	csrfToken, err := generateToken()
-	if err != nil {
-		return "", err
-	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     s.params.CookiePrefix + CSRFTokenKey,
-		Path:     s.params.CookiePath,
-		SameSite: s.params.CookieSameSite,
-		Expires:  time.Now().Add(s.params.SessionTTL),
-		Value:    csrfToken,
-		HttpOnly: false,
-		Secure:   true,
-	})
-
-	return csrfToken, nil
-}
-
-func generateToken() (string, error) {
-	token := make([]byte, 32)
-	if _, err := rand.Read(token); err != nil {
-		return "", err
-	}
-	return base64.StdEncoding.EncodeToString(token), nil
+	return s.params.Cache.Del(r.Context(), claims.SessionID)
 }
