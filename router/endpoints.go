@@ -10,7 +10,7 @@ import (
 	"app/middleware"
 )
 
-func pageEndpoints(h *handler.Handler) []endpoint {
+func publicEndpoints(h *handler.Handler) []endpoint {
 	return []endpoint{
 		{
 			method:  http.MethodGet,
@@ -20,8 +20,8 @@ func pageEndpoints(h *handler.Handler) []endpoint {
 	}
 }
 
-func assetEndpoints(static embed.FS) []endpoint {
-	root := http.FS(static)
+func staticEndpoints(fs embed.FS) []endpoint {
+	root := http.FS(fs)
 
 	handler := http.StripPrefix(
 		config.Config.App.RootPrefix,
@@ -40,7 +40,7 @@ func assetEndpoints(static embed.FS) []endpoint {
 	return []endpoint{
 		{
 			method:  http.MethodGet,
-			path:    routes.Map[routes.Assets],
+			path:    routes.Map[routes.Static],
 			handler: cache(handler),
 		},
 	}

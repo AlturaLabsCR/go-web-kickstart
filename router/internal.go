@@ -30,8 +30,8 @@ func registerRoutes(
 func endpoints(h *handler.Handler, fs embed.FS) []endpoint {
 	var endpoints []endpoint
 
-	endpoints = append(endpoints, assetEndpoints(fs)...)
-	endpoints = append(endpoints, pageEndpoints(h)...)
+	endpoints = append(endpoints, staticEndpoints(fs)...)
+	endpoints = append(endpoints, publicEndpoints(h)...)
 
 	return endpoints
 }
