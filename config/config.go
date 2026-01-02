@@ -2,7 +2,7 @@
 package config
 
 const (
-	envPrefix = "TE_"
+	envPrefix = "APP_"
 )
 
 var Config = Configuration{

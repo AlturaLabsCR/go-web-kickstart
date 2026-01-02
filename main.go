@@ -16,7 +16,12 @@ import (
 var assetsFS embed.FS
 
 func main() {
+	config.InitEnv()
+	config.InitRoutes()
+
 	logger := config.InitLogger()
+
+	logger.Debug("config", "config", config.Config)
 
 	h := handler.New(&handler.HandlerParams{
 		Logger: logger,
