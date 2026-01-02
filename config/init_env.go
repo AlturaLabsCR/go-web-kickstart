@@ -1,10 +1,26 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"strconv"
+
+	"github.com/BurntSushi/toml"
 )
+
+func InitEnv() {
+	for _, name := range defaultConfigPaths {
+		if data, err := os.ReadFile(name); err == nil {
+			if _, err := toml.Decode(string(data), &Config); err != nil {
+				panic(fmt.Sprintf("error decoding config: %v", err))
+			}
+			break
+		}
+	}
+
+	overrideWithEnv(envPrefix, &Config)
+}
 
 func overrideWithEnv(prefix string, target any) {
 	v := reflect.ValueOf(target).Elem()

@@ -1,13 +1,8 @@
 // Package config
 package config
 
-import (
-	"fmt"
-	"os"
-
-	"app/config/routes"
-
-	"github.com/BurntSushi/toml"
+const (
+	envPrefix = "TE_"
 )
 
 var Config = Configuration{
@@ -18,19 +13,17 @@ var Config = Configuration{
 	},
 }
 
-func Init() {
-	for _, name := range defaultConfigPaths {
-		if data, err := os.ReadFile(name); err == nil {
-			if _, err := toml.Decode(string(data), &Config); err != nil {
-				panic(fmt.Sprintf("error decoding config: %v", err))
-			}
-			break
-		}
-	}
+type Configuration struct {
+	App      App
+	Sessions Sessions
+}
 
-	overrideWithEnv(envPrefix, &Config)
+type App struct {
+	Port       string `env:"PORT"`
+	LogLevel   string `env:"LOG_LEVEL"`
+	RootPrefix string `env:"ROOT_PREFIX"`
+}
 
-	if prefix := Config.App.RootPrefix; prefix != "" {
-		routes.PrefixEndpoints(prefix)
-	}
+type Sessions struct {
+	Secret string `env:"SESSIONS_SECRET"`
 }
