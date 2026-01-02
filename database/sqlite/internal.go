@@ -1,8 +1,11 @@
 package sqlite
 
-import "app/database"
+import (
+	"app/database"
+	"app/database/sqlite/queries"
+)
 
 var (
 	_ database.Database = (*Sqlite)(nil)
-	_ database.Querier  = (*SqliteQuerier)(nil)
+	_ database.Querier  = (*queries.SqliteQuerier)(nil)
 )

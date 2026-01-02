@@ -8,6 +8,7 @@ import (
 	"app/cache"
 	"app/database"
 	"app/database/sqlite/db"
+	"app/database/sqlite/queries"
 )
 
 type Sqlite struct {
@@ -56,4 +57,23 @@ func (s *Sqlite) Exec(ctx context.Context, sql string) error {
 
 func (s *Sqlite) Close(_ context.Context) error {
 	return s.db.Close()
+}
+
+func (s *Sqlite) WithTx(
+	_ context.Context,
+	fn func(q database.Querier) error,
+) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	qtx := queries.New(s.queries.WithTx(tx), s.cache)
+
+	if err := fn(qtx); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }

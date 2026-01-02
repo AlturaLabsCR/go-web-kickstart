@@ -7,6 +7,7 @@ import (
 	"app/cache"
 	"app/database"
 	"app/database/postgres/db"
+	"app/database/postgres/queries"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -62,4 +63,23 @@ func (p *Postgres) Exec(ctx context.Context, sql string) error {
 func (p *Postgres) Close(ctx context.Context) error {
 	p.db.Close()
 	return nil
+}
+
+func (p *Postgres) WithTx(
+	ctx context.Context,
+	fn func(q database.Querier) error,
+) error {
+	tx, err := p.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	qtx := queries.New(p.queries.WithTx(tx), p.cache)
+
+	if err := fn(qtx); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
