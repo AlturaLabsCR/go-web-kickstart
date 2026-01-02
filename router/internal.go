@@ -1,0 +1,37 @@
+package router
+
+import (
+	"embed"
+	"net/http"
+
+	"app/handler"
+)
+
+type endpoint struct {
+	method  string
+	path    string
+	handler http.Handler
+}
+
+func registerRoutes(
+	mux *http.ServeMux,
+	h *handler.Handler,
+	fs embed.FS,
+) {
+	for _, e := range endpoints(h, fs) {
+		pattern := e.path
+		if e.method != "" {
+			pattern = e.method + " " + e.path
+		}
+		mux.Handle(pattern, e.handler)
+	}
+}
+
+func endpoints(h *handler.Handler, fs embed.FS) []endpoint {
+	var endpoints []endpoint
+
+	endpoints = append(endpoints, assetEndpoints(fs)...)
+	endpoints = append(endpoints, pageEndpoints(h)...)
+
+	return endpoints
+}
