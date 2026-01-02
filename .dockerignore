@@ -24,3 +24,9 @@ tmp/
 
 # secrets
 .env
+
+# git
+.git*
+
+# not needed for build
+contrib/
