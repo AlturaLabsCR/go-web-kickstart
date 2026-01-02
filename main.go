@@ -2,8 +2,8 @@ package main
 
 import "embed"
 
-//go:embed static/*
-var staticFS embed.FS
+//go:embed assets/*
+var assetsFS embed.FS
 
 func main() {
 }

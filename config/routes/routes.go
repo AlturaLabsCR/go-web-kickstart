@@ -5,13 +5,13 @@ type Route int
 
 const (
 	Root Route = iota
-	Static
+	Assets
 	Home
 )
 
 var Map = map[Route]string{
 	Root:   "/",
-	Static: "/static/",
+	Assets: "/assets/",
 	Home:   "/home",
 }
 

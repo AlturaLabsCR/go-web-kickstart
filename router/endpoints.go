@@ -20,7 +20,7 @@ func publicEndpoints(h *handler.Handler) []endpoint {
 	}
 }
 
-func staticEndpoints(fs embed.FS) []endpoint {
+func assetsEndpoints(fs embed.FS) []endpoint {
 	root := http.FS(fs)
 
 	handler := http.StripPrefix(
@@ -40,7 +40,7 @@ func staticEndpoints(fs embed.FS) []endpoint {
 	return []endpoint{
 		{
 			method:  http.MethodGet,
-			path:    routes.Map[routes.Static],
+			path:    routes.Map[routes.Assets],
 			handler: cache(handler),
 		},
 	}
