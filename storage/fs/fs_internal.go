@@ -32,7 +32,7 @@ func (fs *FS) putObject(_ context.Context, key string, body io.Reader) error {
 		return err
 	}
 	defer func() {
-		f.Close()
+		_ = f.Close()
 		_ = os.Remove(tmp)
 	}()
 

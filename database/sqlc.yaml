@@ -5,13 +5,13 @@ sql:
     queries: "postgres/queries"
     gen:
       go:
-        package: "pq"
-        out: "postgres/pq"
+        package: "db"
+        out: "postgres/db"
         sql_package: "pgx/v5"
   - engine: "sqlite"
     schema: "sqlite/migrations"
     queries: "sqlite/queries"
     gen:
       go:
-        package: "sq"
-        out: "sqlite/sq"
+        package: "db"
+        out: "sqlite/db"
