@@ -1,0 +1,46 @@
+# -----------
+# config.toml
+# -----------
+#
+# These are the default configuration parameters used by the app if the
+# `config.toml` file is not found
+#
+# This file is searched for in this priority
+# - /etc/app/config.toml
+# - ./config.toml
+#
+# Environment variables have precedence over any config.toml file, see
+# `contrib/example.env` for the override environment variable names
+
+[App]
+# Port = "8080"
+# LogLevel = "0"  # -4:Debug 0:Info (default) 4:Warn 8:Error
+# RootPrefix = "" # set if app requires example.com/prefix/, e.g. RootPrefix = "/prefix"
+
+[Sessions]
+# Secret = "" # set to persist sessions, generated if empty (not persistent)
+
+[Database]
+# ConnString = "data/db.db" # sqlite by default, use `postgresql://...` URIs for other drivers
+
+[Storage]
+# Type="fs" # filesystem backend, use `s3` to use s3 backend
+# MaxObjectSize=1_000_000   # 1MB by default
+# MaxBucketSize=1_000_000_000 # 1GB by default
+
+[Storage.FS] # Storage.Type="fs"
+# Root="data/storage"
+
+[Storage.S3] # Storage.Type="s3"
+# Region="auto"
+# Bucket=""
+# EndpointURL="" # e.g. https://<cliendID>.r2.cloudflarestorage.com
+# AccessKeyID=""
+# SecretAccessKey=""
+
+[Auth.Google]
+# ClientID = ""
+
+[Auth.Facebook]
+# AppID = ""
+# AppSecret = ""
