@@ -1,4 +1,3 @@
-// Package auth has common methods for authenticating users
 package auth
 
 import (
@@ -10,7 +9,11 @@ import (
 
 const googlePrefix = "g:"
 
-func GetGoogleID(r *http.Request, clientID string) (string, error) {
+type GoogleProvider struct {
+	ClientID string
+}
+
+func (p *GoogleProvider) UserID(r *http.Request) (string, error) {
 	if err := r.ParseForm(); err != nil {
 		return "", err
 	}
@@ -23,7 +26,7 @@ func GetGoogleID(r *http.Request, clientID string) (string, error) {
 	payload, err := idtoken.Validate(
 		r.Context(),
 		token,
-		clientID,
+		p.ClientID,
 	)
 	if err != nil {
 		return "", err

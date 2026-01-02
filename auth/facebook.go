@@ -7,11 +7,18 @@ import (
 	"time"
 )
 
-const FacebookAPIVersion = "v24.0"
+const (
+	FacebookAPIVersion = "v24.0"
+	facebookPrefix     = "fb:"
+)
 
-const facebookPrefix = "fb:"
+type FacebookProvider struct {
+	AppID      string
+	AppSecret  string
+	HTTPClient *http.Client
+}
 
-func GetFacebookID(r *http.Request, appID, appSecret string) (string, error) {
+func (p *FacebookProvider) UserID(r *http.Request) (string, error) {
 	var tokenResp struct {
 		Data struct {
 			UserID    string `json:"user_id"`
@@ -30,12 +37,20 @@ func GetFacebookID(r *http.Request, appID, appSecret string) (string, error) {
 		return "", fmt.Errorf("empty token")
 	}
 
+	client := p.HTTPClient
+	if client == nil {
+		client = http.DefaultClient
+	}
+
 	debugURL := fmt.Sprintf(
-		"https://graph.facebook.com/v24.0/debug_token?input_token=%s&access_token=%s|%s",
-		inputToken, appID, appSecret,
+		"https://graph.facebook.com/%s/debug_token?input_token=%s&access_token=%s|%s",
+		FacebookAPIVersion,
+		inputToken,
+		p.AppID,
+		p.AppSecret,
 	)
 
-	resp, err := http.Get(debugURL)
+	resp, err := client.Get(debugURL)
 	if err != nil {
 		return "", err
 	}
@@ -49,7 +64,7 @@ func GetFacebookID(r *http.Request, appID, appSecret string) (string, error) {
 		return "", fmt.Errorf("facebook token invalid")
 	}
 
-	if tokenResp.Data.AppID != appID {
+	if tokenResp.Data.AppID != p.AppID {
 		return "", fmt.Errorf("token not issued for this app")
 	}
 
