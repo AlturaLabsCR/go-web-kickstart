@@ -1,0 +1,42 @@
+package base
+
+import "app/config"
+
+templ body(main templ.Component) {
+	<body>
+		@h()
+		@m(main)
+		@f()
+	</body>
+}
+
+templ h() {
+	<header>
+		<nav>
+			<span>{ config.AppTitle }</span>
+			<ul>
+				<li>
+					<a class="active" href="#">One</a>
+				</li>
+				<li>
+					<a href="#">Two</a>
+				</li>
+				<li>
+					<a href="#">Three</a>
+				</li>
+			</ul>
+		</nav>
+	</header>
+}
+
+templ m(content templ.Component) {
+	<main>
+		@content
+	</main>
+}
+
+templ f() {
+	<footer>
+		Copyright (c) { config.Config.Year } { config.AppTitle }. All Rights Reserved.
+	</footer>
+}

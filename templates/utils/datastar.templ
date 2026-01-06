@@ -29,7 +29,7 @@ func BtnDelete(id, endpoint, text string, classes ...string) templ.Component {
 	return Button(id, "delete", endpoint, defaultOpts, text, classes)
 }
 
-templ Button(id, method, opts, endpoint, text string, classes []string) {
+templ Button(id, method, endpoint, opts, text string, classes []string) {
 	<button
 		class={ strings.Join(classes, " ") }
 		disabled

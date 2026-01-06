@@ -1,0 +1,15 @@
+:root {
+  --theme-color-fg: #000;
+  --theme-color-fg-secondary: #000;
+  --theme-color-bg: #fff;
+  --theme-color-bg-secondary: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --theme-color-fg: #c4c4c5;
+    --theme-color-fg-secondary: #8f8f91;
+    --theme-color-bg: #1d1e20;
+    --theme-color-bg-secondary: #252628;
+  }
+}

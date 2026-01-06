@@ -1,10 +1,23 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
+
+	"app/templates"
+	"app/templates/base"
 )
 
 func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
-	_, _ = fmt.Fprintf(w, "hello, world\n")
+	ctx := r.Context()
+
+	main := templates.HomeMain()
+
+	params := base.HeadParams{
+		LoadJS:      true,
+		RobotsIndex: true,
+	}
+
+	if err := base.Page(params, main).Render(ctx, w); err != nil {
+		h.Log().Error("error rendering template", "error", err)
+	}
 }

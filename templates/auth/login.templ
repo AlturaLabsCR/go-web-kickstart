@@ -1,0 +1,21 @@
+package auth
+
+const (
+	LoginDivID    = "login-div-id"
+	LoginNoticeID = "login-notice-id"
+)
+
+type LoginParams struct {
+	GoogleClientID       string
+	GoogleVerifyEndpoint string
+	FacebookAuthParams   FacebookAuthParams
+}
+
+templ LoginMain(params LoginParams) {
+	<div id={ LoginDivID }>
+		<div class="hidden" id={ LoginNoticeID }></div>
+		<p>templates/login.templ</p>
+		@google(params.GoogleClientID, params.GoogleVerifyEndpoint)
+		@facebook(params.FacebookAuthParams)
+	</div>
+}

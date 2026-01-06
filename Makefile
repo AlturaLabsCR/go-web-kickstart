@@ -1,3 +1,8 @@
+ifneq (,$(wildcard ./.env))
+    include .env
+    export
+endif
+
 # Replace with your output binary name
 BIN = app
 
@@ -35,7 +40,7 @@ TEMPLATES += $(wildcard templates/**/*.templ)
 TEMPLATES_GEN := $(TEMPLATES:.templ=_templ.go)
 GEN += $(TEMPLATES_GEN)
 $(TEMPLATES_GEN) &: $(TEMPLATES)
-	$(GO) tool $(TEMPL) generate
+	$(GO) tool $(TEMPL) generate -log-level "warn"
 	@touch $@
 
 .PHONY: clean/templates
@@ -43,7 +48,7 @@ clean/templates:
 	rm -rf $(TEMPLATES_GEN)
 
 node_modules: package.json package-lock.json
-	$(NPM) ci $(LOG)
+	$(NPM) ci >/dev/null
 
 .PHONY: clean/node_modules
 clean/node_modules:
@@ -54,7 +59,7 @@ ESBUILD_OUT := $(addsuffix .js,$(basename $(patsubst resources/ts/%,assets/js/%,
 GEN += $(ESBUILD_OUT)
 $(ESBUILD_OUT) &: $(ESBUILD_IN) node_modules
 	@mkdir -p assets/js
-	$(NPX) --yes esbuild $(ESBUILD_IN) --bundle --outdir=assets/js $(LOG)
+	$(NPX) --yes esbuild --log-level=error $(ESBUILD_IN) --bundle --outdir=assets/js
 	@touch $@
 
 .PHONY: clean/assets/js
@@ -63,7 +68,7 @@ clean/assets/js:
 
 GEN += assets/css/styles.css
 assets/css/styles.css: resources/css/tailwind.css $(TEMPLATES) node_modules
-	$(NPX) --yes @tailwindcss/cli -i ./resources/css/tailwind.css -o ./$@
+	$(NPX) --yes @tailwindcss/cli -i ./resources/css/tailwind.css -o ./$@ --minify >/dev/null 2>&1
 	@touch $@
 
 .PHONY: clean/assets/css
@@ -94,48 +99,54 @@ run: $(GEN)
 live/sql:
 	@$(GO) run $(AIR) \
 	--build.cmd "(cd database/ && $(GO) tool $(SQLC) generate)" \
-	--build.bin "/bin/true" \
+	--build.entrypoint "/bin/true" \
 	--build.delay "100" \
 	--build.exclude_dir "" \
 	--build.include_dir "database" \
 	--build.include_ext "sql" \
-	--log.main_only "true"
+	--log.main_only "true" \
+	--log.silent "true"
 
 live/templ:
 	@printf "\033[1mstarting templ proxy, url:\033[0m \033[32m\033[4m%s\033[0m\033[0m\n" "http://localhost:7331"
-	@$(GO) tool github.com/a-h/templ/cmd/templ generate --watch --proxy="http://localhost:8080" --open-browser=false --log-level="warn"
+	@$(GO) tool $(TEMPL) generate --watch --proxy="http://localhost:8080" --open-browser=false --log-level="warn"
 
 live/server: $(GEN)
 	@$(GO) run $(AIR) \
-	--build.cmd "$(GO) build -o tmp/bin/main" --build.bin "tmp/bin/main" --build.delay "100" \
+	--build.cmd "$(GO) build -o tmp/bin/main" \
+	--build.entrypoint "tmp/bin/main" \
+	--build.delay "100" \
 	--build.exclude_dir "node_modules" \
 	--build.include_ext "go,js,css,toml" \
 	--build.stop_on_error "false" \
 	--misc.clean_on_exit true \
-	--log.main_only "true"
+	--log.main_only "true" \
+	--log.silent "true"
 
 live/tailwind: node_modules
 	@$(GO) run $(AIR) \
-	--build.cmd "$(NPX) --yes @tailwindcss/cli -i ./resources/css/tailwind.css -o ./assets/css/styles.css" \
-	--build.bin "/bin/true" \
+	--build.cmd "$(NPX) --yes @tailwindcss/cli -i ./resources/css/tailwind.css -o ./assets/css/styles.css --minify >/dev/null 2>&1 || echo 'tailwindcss error'" \
+	--build.entrypoint "/bin/true" \
 	--build.delay "100" \
 	--build.exclude_dir "" \
 	--build.include_dir "resources,templates" \
 	--build.include_ext "js,css,templ" \
-	--log.main_only "true"
+	--log.main_only "true" \
+	--log.silent "true"
 
 live/esbuild: node_modules
-	@$(NPX) --yes esbuild ./resources/ts/index.ts --bundle --outdir=assets/js --watch=forever $(LIVELOG)
+	@$(NPX) --yes esbuild --log-level=error $(ESBUILD_IN) --bundle --outdir=assets/js --watch=forever
 
 live/sync_assets: assets
 	@$(GO) run $(AIR) \
-	--build.cmd "$(GO) tool github.com/a-h/templ/cmd/templ generate --notify-proxy" \
-	--build.bin "/bin/true" \
+	--build.cmd "$(GO) tool $(TEMPL) generate --notify-proxy" \
+	--build.entrypoint "/bin/true" \
 	--build.delay "100" \
 	--build.exclude_dir "" \
 	--build.include_dir "assets" \
 	--build.include_ext "js,css" \
-	--log.main_only "true"
+	--log.main_only "true" \
+	--log.silent "true"
 
 # See:
 # https://templ.guide/developer-tools/live-reload-with-other-tools

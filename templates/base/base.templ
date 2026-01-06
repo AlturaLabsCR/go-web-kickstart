@@ -1,60 +1,9 @@
 package base
 
-import "app/config"
-import "app/config/routes"
-
-type BaseParams struct {
-	Title                 string
-	Subtitle              string
-	Description           string
-	LoadJS                bool
-	RobotsIndex           bool
-	RobotsGoogleTranslate bool
-}
-
-const RedirectID = "redirect"
-const datastarSrc = "https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.7/bundles/datastar.js"
-
-templ Base(params BaseParams, content templ.Component) {
+templ Page(params HeadParams, main templ.Component) {
 	<!DOCTYPE html>
 	<html>
-		<head>
-			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content"/>
-			if params.Title != "" && params.Subtitle != "" {
-				<title>{ params.Subtitle + " | " + params.Title }</title>
-			} else if params.Title != "" {
-				<title>{ params.Title }</title>
-			} else if params.Subtitle != "" {
-				<title>{ params.Subtitle + " | " + config.AppTitle }</title>
-			} else {
-				<title>{ config.AppTitle }</title>
-			}
-			if params.Description != "" {
-				<meta name="description" content={ params.Description }/>
-			}
-			if !params.RobotsIndex {
-				<meta name="robots" content="noindex"/>
-			}
-			if !params.RobotsGoogleTranslate {
-				<meta name="googlebot" content="notranslate"/>
-			}
-			if params.LoadJS {
-				<script type="module" src={ datastarSrc } async></script>
-				<script src={ routes.Map[routes.Assets] + "js/index.js" } async></script>
-			}
-			<link rel="stylesheet" href={ routes.Map[routes.Assets] + "css/styles.css" }/>
-			<link rel="icon" href={ routes.Map[routes.Assets] + "favicon/favicon.svg" } type="image/svg+xml"/>
-			<!--
-      <link rel="apple-touch-icon" sizes="180x180" href={ routes.Map[routes.Assets] + "favicon/apple-touch-icon.png" }/>
-      <link rel="icon" type="image/png" sizes="32x32" href={ routes.Map[routes.Assets] + "favicon/favicon-32x32.png" }/>
-      <link rel="icon" type="image/png" sizes="16x16" href={ routes.Map[routes.Assets] + "favicon/favicon-16x16.png" }/>
-      <link rel="manifest" href={ routes.Map[routes.Assets] + "manifest.json" }/>
-      -->
-			<div class="hidden" id={ RedirectID }></div>
-		</head>
-		<body>
-			@content
-		</body>
+		@head(params)
+		@body(main)
 	</html>
 }

@@ -1,1 +1,78 @@
 @import "tailwindcss";
+
+@import "./theme.css";
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--theme-color-fg-secondary) transparent;
+}
+
+body {
+  color: var(--theme-color-fg);
+  background-color: var(--theme-color-bg);
+
+  @apply
+  flex
+  flex-col
+  min-h-screen
+}
+
+body > header > *, body > footer > * {
+  @apply
+  content-center
+}
+
+body > main {
+  @apply
+  grow
+  w-full
+  max-w-3xl
+  py-4
+  px-6
+  my-0
+  mx-auto
+}
+
+body > footer {
+  color: var(--theme-color-fg-secondary);
+  @apply
+  flex
+  justify-center
+  p-6
+}
+
+nav {
+  @apply
+  max-w-5xl
+  my-0
+  mx-auto
+  px-6
+  flex
+  flex-wrap
+  justify-between
+  gap-x-12
+  gap-y-2
+}
+
+nav > * {
+  @apply
+  py-4
+}
+
+nav ul {
+  @apply
+  overflow-x-scroll
+  flex
+  flex-row
+  gap-6
+}
+
+nav ul li a {
+  @apply
+  py-1.5
+}
+
+nav ul li a.active {
+  @apply
+  border-b-4
+}

@@ -1,6 +1,8 @@
 // Package config
 package config
 
+import "time"
+
 const (
 	envPrefix = "APP_"
 )
@@ -11,11 +13,13 @@ var Config = Configuration{
 		LogLevel:   defaultLogLevel,
 		RootPrefix: defaultRootPrefix,
 	},
+	Year: time.Now().Year(),
 }
 
 type Configuration struct {
 	App      App
 	Sessions Sessions
+	Year     int
 }
 
 type App struct {
