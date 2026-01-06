@@ -151,7 +151,7 @@ $(DIST_FOLDER)/$(BIN)-x86_64-windows.exe: $(GEN)
 	$(GO_ENV) GOARCH=amd64 GOOS=windows $(GO) build $(BUILD_FLAGS) -o $@
 
 .PHONY: dist/x86_64
-dist/amd64: $(DIST_FOLDER)/$(BIN)-x86_64-linux $(DIST_FOLDER)/$(BIN)-x86_64-windows.exe
+dist/x86_64: $(DIST_FOLDER)/$(BIN)-x86_64-linux $(DIST_FOLDER)/$(BIN)-x86_64-windows.exe
 
 .PHONY: dist
 dist: dist/x86_64
@@ -162,4 +162,4 @@ clean/dist:
 
 .PHONY: clean
 clean:
-	$(MAKE) -j clean/assets/js clean/assets/css clean/node_modules clean/sql clean/templates clean/build clean/live clean/dist
+	$(MAKE) -j clean/assets/js clean/assets/css clean/node_modules clean/sql clean/templates clean/build clean/dist
