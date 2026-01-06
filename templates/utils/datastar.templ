@@ -1,0 +1,48 @@
+package utils
+
+import "strings"
+
+var defaultOpts = `{
+  headers: {"X-CSRF-Token": document.cookie.split('; ').find(r => r.startsWith('csrf='))?.split('=')[1]},
+  openWhenHidden: true,
+}`
+
+func Get(endpoint string) templ.JSExpression    { return Action("get", endpoint, defaultOpts) }
+func Post(endpoint string) templ.JSExpression   { return Action("post", endpoint, defaultOpts) }
+func Put(endpoint string) templ.JSExpression    { return Action("put", endpoint, defaultOpts) }
+func Patch(endpoint string) templ.JSExpression  { return Action("patch", endpoint, defaultOpts) }
+func Delete(endpoint string) templ.JSExpression { return Action("delete", endpoint, defaultOpts) }
+
+func BtnGet(id, endpoint, text string, classes ...string) templ.Component {
+	return Button(id, "get", endpoint, defaultOpts, text, classes)
+}
+func BtnPost(id, endpoint, text string, classes ...string) templ.Component {
+	return Button(id, "post", endpoint, defaultOpts, text, classes)
+}
+func BtnPut(id, endpoint, text string, classes ...string) templ.Component {
+	return Button(id, "put", endpoint, defaultOpts, text, classes)
+}
+func BtnPatch(id, endpoint, text string, classes ...string) templ.Component {
+	return Button(id, "patch", endpoint, defaultOpts, text, classes)
+}
+func BtnDelete(id, endpoint, text string, classes ...string) templ.Component {
+	return Button(id, "delete", endpoint, defaultOpts, text, classes)
+}
+
+templ Button(id, method, opts, endpoint, text string, classes []string) {
+	<button
+		class={ strings.Join(classes, " ") }
+		disabled
+		{ "data-indicator:_" + id + ".busy" }
+		data-attr:disabled={ templ.JSExpression("$_" + id + ".busy") }
+		data-attr:aria-busy={ templ.JSExpression("$_" + id + ".busy && 'true'") }
+		data-on:click={ Action(method, endpoint, opts) }
+	>{ text }</button>
+}
+
+func Action(method, endpoint, opts string) templ.JSExpression {
+	if opts == "" {
+		opts = defaultOpts
+	}
+	return templ.JSExpression("@" + method + "('" + endpoint + "'," + opts + ")")
+}
