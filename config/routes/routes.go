@@ -8,13 +8,17 @@ const (
 	Assets
 	Login
 	About
+	GoogleAuth
+	FacebookAuth
 )
 
 var Map = map[Route]string{
-	Root:   "/",
-	Assets: "/assets/",
-	Login:  "/login/",
-	About:  "/about/",
+	Root:         "/",
+	Assets:       "/assets/",
+	Login:        "/login",
+	About:        "/about",
+	GoogleAuth:   "/auth/google",
+	FacebookAuth: "/auth/facebook",
 }
 
 func PrefixEndpoints(prefix string) {

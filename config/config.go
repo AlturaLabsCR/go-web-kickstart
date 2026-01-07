@@ -31,11 +31,12 @@ var Config = Configuration{
 }
 
 type Configuration struct {
-	App      App
-	Database Database
-	Sessions Sessions
-	Storage  Storage
-	Year     int
+	App           App
+	Database      Database
+	Sessions      Sessions
+	Storage       Storage
+	AuthProviders AuthProviders
+	Year          int
 }
 
 type Database struct {
@@ -70,4 +71,18 @@ type S3 struct {
 
 type FS struct {
 	Root string `env:"STORAGE_LOCAL_ROOT"`
+}
+
+type AuthProviders struct {
+	Google   Google
+	Facebook Facebook
+}
+
+type Google struct {
+	ClientID string `env:"GOOGLE_CLIENT_ID"`
+}
+
+type Facebook struct {
+	AppID     string `env:"FACEBOOK_APP_ID"`
+	AppSecret string `env:"FACEBOOK_APP_SECRET"`
 }

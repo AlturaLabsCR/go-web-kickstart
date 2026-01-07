@@ -38,9 +38,9 @@
 # AccessKeyID=""
 # SecretAccessKey=""
 
-[Auth.Google]
+[AuthProviders.Google]
 # ClientID = ""
 
-[Auth.Facebook]
+[AuthProviders.Facebook]
 # AppID = ""
 # AppSecret = ""
