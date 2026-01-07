@@ -6,13 +6,11 @@ type Route int
 const (
 	Root Route = iota
 	Assets
-	Home
 )
 
 var Map = map[Route]string{
 	Root:   "/",
 	Assets: "/assets/",
-	Home:   "/home",
 }
 
 func PrefixEndpoints(prefix string) {

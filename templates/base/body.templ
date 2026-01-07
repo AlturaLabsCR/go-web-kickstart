@@ -24,10 +24,16 @@ templ h(tr func(string) string) {
 					</a>
 				</li>
 				<li>
-					<a href="#">Two</a>
+					<a href={ routes.Map[routes.Root] }>
+						@utils.DashboardIcon()
+						{ tr("nav.dashboard") }
+					</a>
 				</li>
 				<li>
-					<a href="#">Three</a>
+					<a href={ routes.Map[routes.Root] }>
+						@utils.InfoIcon()
+						{ tr("nav.about") }
+					</a>
 				</li>
 			</ul>
 		</nav>

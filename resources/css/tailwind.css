@@ -8,10 +8,9 @@
 }
 
 body {
-  color: var(--theme-color-fg);
-  background-color: var(--theme-color-bg);
-
   @apply
+  text-(--theme-color-fg)
+  bg-(--theme-color-bg)
   flex
   flex-col
   min-h-screen
@@ -19,7 +18,8 @@ body {
 
 body > * {
   @apply
-  p-4
+  px-6
+  py-4
 }
 
 body > header > *, body > footer > * {
@@ -31,13 +31,13 @@ body > main {
   @apply
   grow
   w-full
-  max-w-3xl
+  max-w-4xl
   mx-auto
 }
 
 body > footer {
-  color: var(--theme-color-fg-secondary);
   @apply
+  text-(--theme-color-fg-secondary)
   flex
   flex-wrap
   gap-6
@@ -47,7 +47,7 @@ body > footer {
 
 nav {
   @apply
-  max-w-5xl
+  max-w-6xl
   mx-auto
   flex
   flex-wrap
@@ -74,40 +74,106 @@ nav ul li a {
   border-transparent
 }
 
-nav ul li a:hover {
-  @apply
-  border-black/50
-  dark:border-white/50
-}
-
 nav ul li a.active {
   @apply
-  font-bold
-  border-black
-  dark:border-white
+  border-(--theme-color-fg-secondary)
 }
 
-h1 { @apply my-3 text-5xl }
-h2 { @apply my-3 text-3xl }
-h3 { @apply my-3 text-2xl }
-h4 { @apply my-3 font-bold text-lg }
-h5 { @apply my-3 font-bold }
-h6 { @apply my-3 font-bold }
+nav ul li a:hover {
+  @apply
+  border-(--theme-color-fg)
+}
+
+h1 { @apply my-4 text-5xl }
+h2 { @apply my-4 text-3xl }
+h3 { @apply my-4 text-2xl }
+h4 { @apply my-4 font-bold text-lg }
+h5 { @apply my-4 font-bold }
+h6 { @apply my-4 font-bold }
 
 p {
   @apply
   my-3
+  text-lg
 }
 
-li a {
+svg[role="icon"] {
+  @apply
+  w-4
+  h-4
+}
+
+*:has(> svg[role="icon"]) {
   @apply
   inline-flex
   items-center
   gap-1.5
 }
 
-li a svg {
+article > header {
   @apply
-  w-5
-  h-5
+  text-(--theme-color-fg-secondary)
+  flex
+  flex-col
+  mb-8
+}
+
+article > header > nav {
+  @apply
+  m-0
+}
+
+article > header > nav ul {
+  @apply
+  p-0
+  gap-2
+}
+
+article > header > h1 {
+  @apply
+  text-(--theme-color-fg)
+}
+
+table {
+  @apply
+  w-full
+}
+
+thead tr {
+  @apply
+  border-(--theme-color-separator)
+  border-b-3
+}
+
+tbody tr {
+  @apply
+  border-(--theme-color-separator)
+  border-b
+}
+
+tfoot tr {
+  @apply
+  border-(--theme-color-separator)
+  border-t-3
+}
+
+td {
+  @apply
+  py-0.5
+  px-4
+}
+
+th {
+  @apply
+  py-3
+  px-4
+}
+
+img {
+  @apply
+  w-full
+  max-w-2xl
+  mx-auto
+  my-6
+  shadow-lg
 }
