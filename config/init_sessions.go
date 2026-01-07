@@ -12,7 +12,7 @@ func InitSessions(db database.Database) (*sessions.Store[SessionData], error) {
 	params := sessions.StoreParams{
 		Cache: cache.NewMemoryStore(),
 
-		// TODO: Configure database as L2 cache
+		// TODO: allow db to be used as L2 cache
 		// L2Cache cache.Cache // optional
 
 		StoreSecret: Config.Sessions.Secret,

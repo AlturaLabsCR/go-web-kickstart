@@ -17,42 +17,56 @@ const (
 	PostgresDriver = "postgresql"
 )
 
-func InitDB() (database.Database, error) {
+func InitDB(ctx context.Context) (database.Database, error) {
 	var empty database.Database
 
-	ctx := context.Background()
 	connStr := Config.Database.ConnString
 
-	switch getDriver(connStr) {
-	case SqliteDriver:
-		if info, err := os.Stat(filepath.Dir(connStr)); err == nil {
-			if !info.IsDir() {
-				return empty, fmt.Errorf("%s, '%s' %s", connStr, info.Name(), "is not a directory")
-			}
-		} else {
-			return empty, fmt.Errorf("%s, %w", connStr, err)
-		}
+	driver, err := getDriver(connStr)
+	if err != nil {
+		return empty, fmt.Errorf("no available driver: %w", err)
+	}
 
-		sq, err := sqlite.NewSqlite(connStr)
-		if err != nil {
-			return empty, err
-		}
-		return sq, nil
+	switch driver {
+	case SqliteDriver:
+		return initSqlite(connStr)
 	case PostgresDriver:
-		pq, err := postgres.NewPostgres(ctx, connStr)
-		if err != nil {
-			return empty, err
-		}
-		return pq, nil
+		return initPostgres(ctx, connStr)
 	}
 
 	return empty, fmt.Errorf("no available driver for: %s", connStr)
 }
 
-func getDriver(connStr string) string {
-	if strings.Contains(connStr, PostgresDriver) {
-		return PostgresDriver
+func initSqlite(connStr string) (*sqlite.Sqlite, error) {
+	sq, err := sqlite.NewSqlite(connStr)
+	if err != nil {
+		return nil, err
 	}
 
-	return SqliteDriver
+	return sq, nil
+}
+
+func initPostgres(ctx context.Context, connStr string) (*postgres.Postgres, error) {
+	pq, err := postgres.NewPostgres(ctx, connStr)
+	if err != nil {
+		return nil, err
+	}
+
+	return pq, nil
+}
+
+func getDriver(connStr string) (string, error) {
+	if strings.Contains(connStr, PostgresDriver) {
+		return PostgresDriver, nil
+	}
+
+	if info, err := os.Stat(filepath.Dir(connStr)); err == nil {
+		if !info.IsDir() {
+			return "", fmt.Errorf("%s, '%s' %s", connStr, info.Name(), "is not a directory")
+		}
+	} else {
+		return "", fmt.Errorf("%s, %w", connStr, err)
+	}
+
+	return SqliteDriver, nil
 }

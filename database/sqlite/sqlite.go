@@ -52,6 +52,10 @@ func NewSqlite(connStr string, opts ...SqliteOption) (*Sqlite, error) {
 	return s, nil
 }
 
+func (s *Sqlite) Querier() database.Querier {
+	return queries.New(s.queries, s.cache)
+}
+
 func (s *Sqlite) Exec(ctx context.Context, sql string) error {
 	_, err := s.db.ExecContext(ctx, sql)
 	return err

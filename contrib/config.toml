@@ -25,11 +25,11 @@
 
 [Storage]
 # Type="fs" # filesystem backend, use `s3` to use s3 backend
-# MaxObjectSize=1_000_000   # 1MB by default
+# MaxObjectSize=1_000_000     # 1MB by default
 # MaxBucketSize=1_000_000_000 # 1GB by default
 
 [Storage.FS] # Storage.Type="fs"
-# Root="data/storage"
+# Root="./data/storage"
 
 [Storage.S3] # Storage.Type="s3"
 # Region="auto"

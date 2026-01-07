@@ -20,6 +20,7 @@ func InitEnv() {
 	}
 
 	overrideWithEnv(envPrefix, &Config)
+	overrideAWS(&Config.Storage.S3)
 }
 
 func overrideWithEnv(prefix string, target any) {
@@ -56,5 +57,44 @@ func overrideWithEnv(prefix string, target any) {
 			}
 			field.SetInt(val)
 		}
+	}
+}
+
+// overrideAWS sets AWS environment variables from the given S3 config.
+// For each struct field tagged with `env`, it sets the env var only if:
+//   - the env var is not already defined, and
+//   - the struct field value is non-empty.
+//
+// This allows config-file values to act as defaults while preserving
+// explicitly provided environment variables.
+//
+// Used by InitEnv, required by initS3.
+func overrideAWS(target *S3) {
+	v := reflect.ValueOf(target).Elem()
+	t := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldType := t.Field(i)
+
+		envKey := fieldType.Tag.Get("env")
+		if envKey == "" {
+			continue
+		}
+
+		if field.Kind() != reflect.String {
+			continue
+		}
+
+		if _, exists := os.LookupEnv(envKey); exists {
+			continue
+		}
+
+		value := field.String()
+		if value == "" {
+			continue
+		}
+
+		_ = os.Setenv(envKey, value)
 	}
 }

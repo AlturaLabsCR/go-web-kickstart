@@ -16,6 +16,17 @@ var Config = Configuration{
 	Database: Database{
 		ConnString: defaultDBConnStr,
 	},
+	Storage: Storage{
+		Type: defaultStorageFS,
+		FS: FS{
+			Root: defaultStorageFSRoot,
+		},
+		S3: S3{
+			Region: defaultStorageS3Region,
+		},
+		MaxObjectSize: defaultMaxObjectSize,
+		MaxBucketSize: defaultMaxBucketSize,
+	},
 	Year: time.Now().Year(),
 }
 
@@ -23,6 +34,7 @@ type Configuration struct {
 	App      App
 	Database Database
 	Sessions Sessions
+	Storage  Storage
 	Year     int
 }
 
@@ -38,4 +50,24 @@ type App struct {
 
 type Sessions struct {
 	Secret string `env:"SESSIONS_SECRET"`
+}
+
+type Storage struct {
+	Type          string `env:"STORAGE_TYPE"`
+	S3            S3
+	FS            FS
+	MaxObjectSize int64 `env:"STORAGE_MAX_OBJECT_SIZE"`
+	MaxBucketSize int64 `env:"STORAGE_MAX_BUCKET_SIZE"`
+}
+
+type S3 struct {
+	Region          string `env:"AWS_REGION"`
+	Bucket          string `env:"AWS_BUCKET"`
+	EndpointURL     string `env:"AWS_ENDPOINT_URL"`
+	AccessKeyID     string `env:"AWS_ACCESS_KEY_ID"`
+	SecretAccessKey string `env:"AWS_SECRET_ACCESS_KEY"`
+}
+
+type FS struct {
+	Root string `env:"STORAGE_LOCAL_ROOT"`
 }

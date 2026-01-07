@@ -55,6 +55,10 @@ func NewPostgres(
 	return p, nil
 }
 
+func (p *Postgres) Querier() database.Querier {
+	return queries.New(p.queries, p.cache)
+}
+
 func (p *Postgres) Exec(ctx context.Context, sql string) error {
 	_, err := p.db.Exec(ctx, sql)
 	return err

@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"app/config"
 	"app/handler"
@@ -16,19 +18,22 @@ import (
 var assetsFS embed.FS
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	config.InitEnv()
 	config.InitRoutes()
 
 	logger := config.InitLogger()
 	logger.Debug("config", "config", config.Config)
 
-	database, err := config.InitDB()
+	database, err := config.InitDB(ctx)
 	if err != nil {
 		logger.Error("failed to init database", "error", err)
 		os.Exit(1)
 	}
 
-	storage, err := config.InitStorage()
+	storage, err := config.InitStorage(ctx, database.Querier())
 	if err != nil {
 		logger.Error("failed to init storage", "error", err)
 		os.Exit(1)
@@ -63,18 +68,38 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
+	port := config.Config.App.Port
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: routes,
+	}
+
 	go func() {
-		port := config.Config.App.Port
-
-		logger.Info("server starting", "address", ":"+port)
-
-		if err := http.ListenAndServe(":"+port, routes); err != nil {
-			logger.Error("failed to start server", "port", port, "error", err)
-			os.Exit(1)
+		logger.Info("server starting", "address", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Error("server error", "error", err)
 		}
 	}()
-	// defer database.Close(context.Background())
 
 	<-stop
-	logger.Info("shutting down...")
+
+	logger.Debug("shutting down...")
+
+	cancel()
+
+	shutdownCtx, shutdownCtxCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer shutdownCtxCancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		logger.Error("server shutdown error", "error", err)
+	}
+
+	if err := database.Close(shutdownCtx); err != nil {
+		logger.Error("failed to close database", "error", err)
+	}
+
+	signal.Stop(stop)
+	close(stop)
+
+	logger.Debug("done")
 }
