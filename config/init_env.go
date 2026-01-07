@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/BurntSushi/toml"
+	"github.com/joho/godotenv"
 )
 
 func InitEnv() {
@@ -19,6 +20,7 @@ func InitEnv() {
 		}
 	}
 
+	_ = godotenv.Load()
 	overrideWithEnv(envPrefix, &Config)
 	overrideAWS(&Config.Storage.S3)
 }
