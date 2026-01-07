@@ -9,6 +9,8 @@ import (
 	"app/database"
 	"app/database/sqlite/db"
 	"app/database/sqlite/queries"
+
+	_ "modernc.org/sqlite"
 )
 
 type Sqlite struct {
@@ -27,8 +29,8 @@ func WithCache(c cache.Cache) SqliteOption {
 	}
 }
 
-func NewSqlite(connString string, opts ...SqliteOption) (*Sqlite, error) {
-	conn, err := sql.Open("sqlite", connString)
+func NewSqlite(connStr string, opts ...SqliteOption) (*Sqlite, error) {
+	conn, err := sql.Open("sqlite", connStr)
 	if err != nil {
 		return nil, err
 	}

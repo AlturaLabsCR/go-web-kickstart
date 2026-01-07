@@ -17,7 +17,9 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 		RobotsIndex: true,
 	}
 
-	if err := base.Page(params, main).Render(ctx, w); err != nil {
+	tr := h.Tr(r)
+
+	if err := base.Page(params, main, tr).Render(ctx, w); err != nil {
 		h.Log().Error("error rendering template", "error", err)
 	}
 }

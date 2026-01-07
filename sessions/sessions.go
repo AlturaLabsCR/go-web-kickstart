@@ -36,11 +36,11 @@ type StoreParams struct {
 	StoreSecret    string        // defaults to generated string
 }
 
-type SessionStore[T any] struct {
+type Store[T any] struct {
 	params StoreParams
 }
 
-func NewStore[T any](params StoreParams, secure bool) (*SessionStore[T], error) {
+func NewStore[T any](params StoreParams) (*Store[T], error) {
 	if params.Cache == nil {
 		return nil, ErrBadCache
 	}
@@ -69,10 +69,10 @@ func NewStore[T any](params StoreParams, secure bool) (*SessionStore[T], error) 
 		params.StoreSecret = s
 	}
 
-	return &SessionStore[T]{params: params}, nil
+	return &Store[T]{params: params}, nil
 }
 
-func (s *SessionStore[T]) Set(ctx context.Context, w http.ResponseWriter, sessionUser string, sessionData *T) error {
+func (s *Store[T]) Set(ctx context.Context, w http.ResponseWriter, sessionUser string, sessionData *T) error {
 	sessionID, err := generateToken()
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func (s *SessionStore[T]) Set(ctx context.Context, w http.ResponseWriter, sessio
 	return s.params.Cache.Set(ctx, sessionID, sessionStr)
 }
 
-func (s *SessionStore[T]) Validate(w http.ResponseWriter, r *http.Request) (*T, error) {
+func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (*T, error) {
 	ctx := r.Context()
 
 	cookie, err := r.Cookie(s.params.CookiePrefix + AccessTokenKey)
@@ -144,7 +144,7 @@ func (s *SessionStore[T]) Validate(w http.ResponseWriter, r *http.Request) (*T, 
 	return &claims.SessionData, nil
 }
 
-func (s *SessionStore[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
+func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
 	cookie, err := r.Cookie(s.params.CookiePrefix + AccessTokenKey)
 	if err != nil {
 		return err

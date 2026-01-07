@@ -13,13 +13,21 @@ var Config = Configuration{
 		LogLevel:   defaultLogLevel,
 		RootPrefix: defaultRootPrefix,
 	},
+	Database: Database{
+		ConnString: defaultDBConnStr,
+	},
 	Year: time.Now().Year(),
 }
 
 type Configuration struct {
 	App      App
+	Database Database
 	Sessions Sessions
 	Year     int
+}
+
+type Database struct {
+	ConnString string `env:"DB_CONNSTR"`
 }
 
 type App struct {

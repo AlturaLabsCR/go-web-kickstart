@@ -21,11 +21,27 @@ type HandlerParams struct {
 	Database   database.Database
 	Storage    storage.ObjectStorage
 	Translator i18n.HTTPTranslatorFunc
-	Sessions   *sessions.SessionStore[config.SessionData]
+	Sessions   *sessions.Store[config.SessionData]
 }
 
-func New(params *HandlerParams) *Handler {
-	return &Handler{params}
+func New(params *HandlerParams) (*Handler, error) {
+	if params.Logger == nil {
+		return nil, errStr("logger is nil")
+	}
+	if params.Database == nil {
+		return nil, errStr("database interface is nil")
+	}
+	if params.Storage == nil {
+		return nil, errStr("storage interface is nil")
+	}
+	if params.Translator == nil {
+		return nil, errStr("translator func is nil")
+	}
+	if params.Sessions == nil {
+		return nil, errStr("sessions interface is nil")
+	}
+
+	return &Handler{params}, nil
 }
 
 func (h *Handler) Log() *slog.Logger {
@@ -44,6 +60,6 @@ func (h *Handler) Tr(r *http.Request) func(string) string {
 	return h.params.Translator(r)
 }
 
-func (h *Handler) Sess() *sessions.SessionStore[config.SessionData] {
+func (h *Handler) Sess() *sessions.Store[config.SessionData] {
 	return h.params.Sessions
 }

@@ -23,9 +23,7 @@ type FS struct {
 type FSParams struct {
 	Root          string
 	Cache         cache.Cache
+	L2Cache       cache.Cache // optional
 	MaxObjectSize int64
 	MaxBucketSize int64
-
-	// optional params
-	L2Cache cache.Cache
 }

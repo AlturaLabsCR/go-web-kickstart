@@ -14,7 +14,7 @@ func (e errStr) Error() string {
 	return string(e)
 }
 
-func (s *SessionStore[T]) refresh(w http.ResponseWriter, r *http.Request, claims *Claims[T], session *Session) error {
+func (s *Store[T]) refresh(w http.ResponseWriter, r *http.Request, claims *Claims[T], session *Session) error {
 	ctx := r.Context()
 
 	if _, err := s.refreshAccessTokenCookie(
@@ -45,7 +45,7 @@ func (s *SessionStore[T]) refresh(w http.ResponseWriter, r *http.Request, claims
 	return s.params.Cache.Set(ctx, claims.SessionID, sessionStr)
 }
 
-func (s *SessionStore[T]) refreshAccessTokenCookie(w http.ResponseWriter, sessionID string, sessionData *T) (string, error) {
+func (s *Store[T]) refreshAccessTokenCookie(w http.ResponseWriter, sessionID string, sessionData *T) (string, error) {
 	accessToken, err := s.newJwt(sessionID, *sessionData)
 	if err != nil {
 		return "", err
@@ -64,7 +64,7 @@ func (s *SessionStore[T]) refreshAccessTokenCookie(w http.ResponseWriter, sessio
 	return accessToken, nil
 }
 
-func (s *SessionStore[T]) refreshCSRFCookie(w http.ResponseWriter) (string, error) {
+func (s *Store[T]) refreshCSRFCookie(w http.ResponseWriter) (string, error) {
 	csrfToken, err := generateToken()
 	if err != nil {
 		return "", err

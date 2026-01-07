@@ -27,9 +27,7 @@ type S3Params struct {
 	Client        *s3.Client
 	BucketName    string
 	Cache         cache.Cache
+	L2Cache       cache.Cache // optional
 	MaxObjectSize int64
 	MaxBucketSize int64
-
-	// optional params
-	L2Cache cache.Cache
 }

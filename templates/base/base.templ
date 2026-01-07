@@ -1,9 +1,9 @@
 package base
 
-templ Page(params HeadParams, main templ.Component) {
+templ Page(params HeadParams, main templ.Component, tr func(string) string) {
 	<!DOCTYPE html>
 	<html>
 		@head(params)
-		@body(main)
+		@body(tr, main)
 	</html>
 }

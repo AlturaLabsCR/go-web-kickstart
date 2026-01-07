@@ -30,10 +30,10 @@ func WithCache(c cache.Cache) PostgresOption {
 
 func NewPostgres(
 	ctx context.Context,
-	connString string,
+	connStr string,
 	opts ...PostgresOption,
 ) (*Postgres, error) {
-	pool, err := pgxpool.New(ctx, connString)
+	pool, err := pgxpool.New(ctx, connStr)
 	if err != nil {
 		return nil, err
 	}

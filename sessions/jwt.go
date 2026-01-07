@@ -13,7 +13,7 @@ type Claims[ClaimsData any] struct {
 	jwt.RegisteredClaims
 }
 
-func (s *SessionStore[ClaimsData]) newJwt(sessionID string, sessionData ClaimsData) (string, error) {
+func (s *Store[ClaimsData]) newJwt(sessionID string, sessionData ClaimsData) (string, error) {
 	method := jwt.SigningMethodHS256
 
 	now := time.Now()
@@ -33,7 +33,7 @@ func (s *SessionStore[ClaimsData]) newJwt(sessionID string, sessionData ClaimsDa
 	return jwt.NewWithClaims(method, claims).SignedString(key)
 }
 
-func (s *SessionStore[ClaimsData]) validateJwt(tokenString string) (*Claims[ClaimsData], error) {
+func (s *Store[ClaimsData]) validateJwt(tokenString string) (*Claims[ClaimsData], error) {
 	var empty *Claims[ClaimsData]
 	claims := &Claims[ClaimsData]{}
 

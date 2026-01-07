@@ -1,22 +1,27 @@
 package base
 
 import "app/config"
+import "app/templates/utils"
+import "app/config/routes"
 
-templ body(main templ.Component) {
+templ body(tr func(string) string, main templ.Component) {
 	<body>
-		@h()
+		@h(tr)
 		@m(main)
 		@f()
 	</body>
 }
 
-templ h() {
+templ h(tr func(string) string) {
 	<header>
 		<nav>
 			<span>{ config.AppTitle }</span>
 			<ul>
 				<li>
-					<a class="active" href="#">One</a>
+					<a class="active" href={ routes.Map[routes.Root] }>
+						@utils.HomeIcon()
+						{ tr("nav.home") }
+					</a>
 				</li>
 				<li>
 					<a href="#">Two</a>

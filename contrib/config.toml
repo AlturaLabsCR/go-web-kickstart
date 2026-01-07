@@ -21,7 +21,7 @@
 # Secret = "" # set to persist sessions, generated if empty (not persistent)
 
 [Database]
-# ConnString = "data/db.db" # sqlite by default, use `postgresql://...` URIs for other drivers
+# ConnString = "./data/db.sqlite" # sqlite by default, use `postgresql://...` URIs for other drivers
 
 [Storage]
 # Type="fs" # filesystem backend, use `s3` to use s3 backend
