@@ -17,6 +17,16 @@ func publicEndpoints(h *handler.Handler) []endpoint {
 			path:    routes.Map[routes.Root],
 			handler: http.HandlerFunc(h.HomePage),
 		},
+		{
+			method:  http.MethodGet,
+			path:    routes.Map[routes.Login],
+			handler: http.HandlerFunc(h.LoginPage),
+		},
+		{
+			method:  http.MethodGet,
+			path:    routes.Map[routes.About],
+			handler: http.HandlerFunc(h.AboutPage),
+		},
 	}
 }
 

@@ -4,33 +4,51 @@ import "app/config"
 import "app/templates/utils"
 import "app/config/routes"
 
-templ body(tr func(string) string, main templ.Component) {
+templ body(tr func(string) string, main templ.Component, active string) {
 	<body>
-		@h(tr)
+		@h(tr, active)
 		@m(main)
 		@f()
 	</body>
 }
 
-templ h(tr func(string) string) {
+templ h(tr func(string) string, active string) {
 	<header>
 		<nav>
 			<span>{ config.AppTitle }</span>
 			<ul>
 				<li>
-					<a class="active" href={ routes.Map[routes.Root] }>
+					<a
+						if active == routes.Map[routes.Root] {
+							class="active"
+						} else {
+							href={ routes.Map[routes.Root] }
+						}
+					>
 						@utils.HomeIcon()
 						{ tr("nav.home") }
 					</a>
 				</li>
 				<li>
-					<a href={ routes.Map[routes.Root] }>
-						@utils.DashboardIcon()
-						{ tr("nav.dashboard") }
+					<a
+						if active == routes.Map[routes.Login] {
+							class="active"
+						} else {
+							href={ routes.Map[routes.Login] }
+						}
+					>
+						@utils.UserIcon()
+						{ tr("nav.account") }
 					</a>
 				</li>
 				<li>
-					<a href={ routes.Map[routes.Root] }>
+					<a
+						if active == routes.Map[routes.About] {
+							class="active"
+						} else {
+							href={ routes.Map[routes.About] }
+						}
+					>
 						@utils.InfoIcon()
 						{ tr("nav.about") }
 					</a>
