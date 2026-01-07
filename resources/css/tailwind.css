@@ -103,6 +103,11 @@ svg[role="icon"] {
   h-4
 }
 
+a {
+  @apply
+  cursor-pointer
+}
+
 *:has(> svg[role="icon"]) {
   @apply
   inline-flex
