@@ -1,0 +1,50 @@
+input:not([type="checkbox"], [type="radio"]), button, select {
+  &:disabled {
+    @apply
+    opacity-50
+  }
+
+  &:focus {
+    @apply
+    outline-0
+    border-(--theme-color-fg)
+  }
+
+  @apply
+  bg-(--theme-color-bg-secondary)
+  w-full
+  my-2
+  p-4
+  text-lg
+  border
+  border-(--theme-color-separator)
+  rounded-md
+}
+
+label:has(input:disabled) {
+  @apply
+  opacity-50
+}
+
+input[type="color"] {
+  @apply
+  p-1.5
+}
+
+button {
+  @apply
+  bg-(--theme-color-button)
+  border-(--theme-color-button)
+  text-white
+  hover:brightness-110
+}
+
+input:is([type="checkbox"], [type="radio"]) {
+  @apply
+  scale-200
+  m-4
+  accent-(--theme-color-button)
+  cursor-pointer
+  focus:ring-1
+  focus:ring-(--theme-color-primary)/20
+}

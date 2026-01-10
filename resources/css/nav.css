@@ -1,0 +1,38 @@
+nav {
+  @apply
+  max-w-6xl
+  mx-auto
+  flex
+  flex-wrap
+  justify-between
+  gap-x-16
+}
+
+nav > * {
+  @apply
+  py-2
+}
+
+nav ul {
+  @apply
+  overflow-x-scroll
+  flex
+  gap-6
+}
+
+nav ul li a {
+  @apply
+  py-0.5
+  border-b-2
+  border-transparent
+}
+
+nav ul li a.active {
+  @apply
+  border-(--theme-color-fg-secondary)
+}
+
+nav ul li a:hover {
+  @apply
+  border-(--theme-color-fg)
+}

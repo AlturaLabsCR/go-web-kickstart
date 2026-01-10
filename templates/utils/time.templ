@@ -1,0 +1,37 @@
+package utils
+
+import (
+	"fmt"
+	"strings"
+	"time"
+)
+
+func GetTime() templ.JSExpression {
+	t := time.Now().Format("2006-01-02T15:04:05-07:00")
+	return templ.JSExpression(t)
+}
+
+func HumanReadableDate(locale string) string {
+	t := time.Now()
+	months := map[string][]string{
+		"en": {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"},
+		"es": {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"},
+	}
+
+	lang := "en"
+
+	base, _, _ := strings.Cut(locale, "_")
+	if _, ok := months[base]; ok {
+		lang = base
+	}
+
+	month := months[lang][t.Month()-1]
+	day := t.Day()
+	year := t.Year()
+
+	if lang == "es" {
+		return fmt.Sprintf("%d de %s, %d", day, month, year)
+	}
+
+	return fmt.Sprintf("%s %d, %d", month, day, year)
+}

@@ -1,0 +1,34 @@
+table {
+  @apply
+  w-full
+}
+
+thead tr {
+  @apply
+  border-(--theme-color-separator)
+  border-b-3
+}
+
+tbody tr {
+  @apply
+  border-(--theme-color-separator)
+  border-b
+}
+
+tfoot tr {
+  @apply
+  border-(--theme-color-separator)
+  border-t-3
+}
+
+td {
+  @apply
+  py-0.5
+  px-4
+}
+
+th {
+  @apply
+  py-3
+  px-4
+}

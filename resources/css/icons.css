@@ -1,0 +1,12 @@
+[role="icon"] {
+  @apply
+  w-4
+  h-4
+}
+
+*:has(> [role="icon"]) {
+  @apply
+  inline-flex
+  items-center
+  gap-1.5
+}

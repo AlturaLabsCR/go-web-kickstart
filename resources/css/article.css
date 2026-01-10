@@ -1,0 +1,23 @@
+article > header {
+  @apply
+  text-(--theme-color-fg-secondary)
+  flex
+  flex-col
+  mb-8
+}
+
+article > header > h1 {
+  @apply
+  text-(--theme-color-fg)
+}
+
+article > header > nav {
+  @apply
+  m-0
+}
+
+article > header > nav ul {
+  @apply
+  p-0
+  gap-2
+}

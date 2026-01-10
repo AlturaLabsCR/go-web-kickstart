@@ -1,0 +1,149 @@
+package templates
+
+import (
+	"app/config"
+	"app/templates/utils"
+)
+
+templ AboutMain(tr func(string) string, lang string) {
+	<article>
+		<header>
+			<nav class="breadcrumbs">
+				<ul>
+					<li>{ tr("nav.home") }</li>
+					»
+					<li>{ tr("nav.about") }</li>
+				</ul>
+			</nav>
+			<h1>{ config.AppTitle }</h1>
+			<small>
+				@utils.TimerIcon()
+				7 min
+				•
+				@utils.UserIcon()
+				John Doe
+				•
+				@utils.CalendarIcon()
+				<time datetime={ utils.GetTime() }>{ utils.HumanReadableDate(lang) }</time>
+			</small>
+		</header>
+		<h1>templates/about.templ</h1>
+		<div class="alert alert-important">
+			<div class="alert-heading">
+				<span>Important!</span>
+			</div>
+			<p>
+				Ea iste amet velit <a href="#">link</a> vero molestiae cum libero. Vel maiores vel fugit pariatur. Aut pariatur ullam consequatur. Et impedit ducimus et voluptas omnis. Sed natus nostrum sit tempore. Et voluptates aut dolorem non.
+				Sint est labore minus tempora delectus ab. Fugiat ipsa at eum. Minus et omnis incidunt.
+			</p>
+		</div>
+		<p>
+			Aperiam quia est nihil eligendi omnis illum natus quia. Expedita et voluptatibus corrupti id eum nesciunt. Aut consectetur deserunt assumenda. Aut magnam quidem ex est nulla ipsum quia ut. Magni expedita rerum reprehenderit fuga aperiam.
+			Praesentium autem qui velit eum voluptates sit vero consequatur.
+		</p>
+		<h2>Form</h2>
+		<form name="myform">
+			<input type="date"/>
+			<input type="time"/>
+			<input type="text" placeholder="Name"/>
+			<input type="number" step="1" placeholder="Number" disabled/>
+			<select id="select" name="select" required="">
+				<option value="" selected="">Select…</option>
+				<option>…</option>
+			</select>
+			<div class="grid">
+				<!-- Checkboxes -->
+				<fieldset>
+					<legend><strong>Checkboxes</strong></legend>
+					<label for="checkbox-1">
+						<input type="checkbox" id="checkbox-1" name="checkbox-1" checked=""/>
+						Checkbox
+					</label>
+					<label for="checkbox-2">
+						<input type="checkbox" id="checkbox-2" name="checkbox-2"/>
+						Checkbox
+					</label>
+				</fieldset>
+				<!-- Radio buttons -->
+				<fieldset>
+					<legend><strong>Radio buttons</strong></legend>
+					<label for="radio-1">
+						<input type="radio" id="radio-1" name="radio" value="radio-1" checked=""/>
+						Radio button
+					</label>
+					<label for="radio-2">
+						<input type="radio" id="radio-2" name="radio" value="radio-2" disabled/>
+						Radio button
+					</label>
+				</fieldset>
+				<!-- Switch -->
+				<fieldset>
+					<legend><strong>Switches</strong></legend>
+					<label for="switch-1">
+						<input type="checkbox" id="switch-1" name="switch-1" role="switch" checked=""/>
+						Switch
+					</label>
+					<label for="switch-2">
+						<input type="checkbox" id="switch-2" name="switch-2" role="switch"/>
+						Switch
+					</label>
+				</fieldset>
+			</div>
+			<input type="color" value="#0eaaaa"/>
+			<button type="button">mybutton</button>
+		</form>
+		<h2>Table</h2>
+		<table>
+			<thead>
+				<tr>
+					<th>User</th>
+					<th>Name</th>
+					<th>Birthday</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>1</td>
+					<td>Albert Einstein</td>
+					<td>14 March 1879</td>
+				</tr>
+				<tr>
+					<td>2</td>
+					<td>Isaac Newton</td>
+					<td>25 December 1642</td>
+				</tr>
+				<tr>
+					<td>3</td>
+					<td>Gottfried Wilhelm Leibniz</td>
+					<td>1 July 1646</td>
+				</tr>
+				<tr>
+					<td>4</td>
+					<td>Carl Friedrich Gauss</td>
+					<td>30 April 1777</td>
+				</tr>
+			</tbody>
+			<tfoot>
+				<tr>
+					<th>Total</th>
+					<td>4</td>
+					<td></td>
+				</tr>
+			</tfoot>
+		</table>
+		<h2>Dog</h2>
+		<img src="https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fwww.publicdomainpictures.net%2Fpictures%2F30000%2Fvelka%2Fdog-1349074709d9b.jpg&f=1&nofb=1&ipt=43c5661fa29449f960d8fdb2ddb8bf98374b193798bc41b902d4be7fffe507dc"/>
+		<p>
+			Ea iste amet velit vero molestiae cum libero. Vel maiores vel fugit pariatur. Aut pariatur ullam consequatur. Et impedit ducimus et voluptas omnis. Sed natus nostrum sit tempore. Et voluptates aut dolorem non.
+			Sint est labore minus tempora delectus ab. Fugiat ipsa at eum. Minus et omnis incidunt.
+			Aperiam quia est nihil eligendi omnis illum natus quia. Expedita et voluptatibus corrupti id eum nesciunt. Aut consectetur deserunt assumenda. Aut magnam quidem ex est nulla ipsum quia ut. Magni expedita rerum reprehenderit fuga aperiam.
+			Praesentium autem qui velit eum voluptates sit vero consequatur.
+		</p>
+		<h2>Code too, see <code>example</code></h2>
+		<pre>
+			<code>
+				git clone repo
+			</code>
+		</pre>
+	</article>
+}
