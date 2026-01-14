@@ -6,8 +6,8 @@ input:not([type="checkbox"], [type="radio"]), button, select {
 
   &:focus {
     @apply
-    outline-0
-    border-(--theme-color-fg)
+    outline-2
+    outline-(--theme-color-primary)/30
   }
 
   @apply
@@ -46,5 +46,5 @@ input:is([type="checkbox"], [type="radio"]) {
   accent-(--theme-color-button)
   cursor-pointer
   focus:ring-1
-  focus:ring-(--theme-color-primary)/20
+  focus:ring-(--theme-color-primary)/30
 }
