@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"app/config/routes"
-	"app/templates"
 	"app/templates/base"
+	"app/templates/protected"
 )
 
 func (h *Handler) ProtectedPage(w http.ResponseWriter, r *http.Request) {
@@ -16,14 +16,15 @@ func (h *Handler) ProtectedPage(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	main := templates.HomeMain()
+	main := protected.ProtectedMain()
+
+	tr := h.Tr(r)
 
 	params := base.HeadParams{
+		Subtitle:    tr("nav.account"),
 		LoadJS:      true,
 		RobotsIndex: false,
 	}
-
-	tr := h.Tr(r)
 
 	if err := base.Page(params, tr, main, routes.Map[routes.Protected]).Render(ctx, w); err != nil {
 		h.Log().Error("error rendering template", "error", err)

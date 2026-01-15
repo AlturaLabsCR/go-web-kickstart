@@ -16,7 +16,7 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	main := templates.HomeMain()
 
 	params := base.HeadParams{
-		LoadJS:      true,
+		LoadJS:      false,
 		RobotsIndex: true,
 	}
 
@@ -48,7 +48,8 @@ func (h *Handler) AboutPage(w http.ResponseWriter, r *http.Request) {
 	main := templates.AboutMain(tr, locale)
 
 	params := base.HeadParams{
-		LoadJS:      true,
+		Subtitle:    tr("nav.about"),
+		LoadJS:      false,
 		RobotsIndex: true,
 	}
 
