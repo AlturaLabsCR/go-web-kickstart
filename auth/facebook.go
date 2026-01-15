@@ -54,7 +54,9 @@ func (p *FacebookProvider) UserID(r *http.Request) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
 		return "", err
