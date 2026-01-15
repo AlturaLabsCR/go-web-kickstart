@@ -18,6 +18,8 @@ nav ul {
   overflow-x-scroll
   flex
   gap-6
+  pr-8
+  mask-[linear-gradient(to_right,black,black_calc(100%-2rem),transparent)]
 }
 
 nav ul li a {
