@@ -14,11 +14,6 @@ func publicEndpoints(h *handler.Handler) []endpoint {
 	return []endpoint{
 		{
 			method:  http.MethodGet,
-			path:    routes.Map[routes.Root],
-			handler: h.HomePage,
-		},
-		{
-			method:  http.MethodGet,
 			path:    routes.Map[routes.Login],
 			handler: h.LoginPage,
 		},
@@ -30,12 +25,23 @@ func publicEndpoints(h *handler.Handler) []endpoint {
 		{
 			method:  http.MethodPost,
 			path:    routes.Map[routes.GoogleAuth],
-			handler: h.AboutPage,
+			handler: h.LoginWithGoogle,
 		},
 		{
 			method:  http.MethodGet,
 			path:    routes.Map[routes.FacebookAuth],
 			handler: h.AboutPage,
+		},
+		{
+			method: http.MethodGet,
+			path:   routes.Map[routes.Root],
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != routes.Map[routes.Root] {
+					http.Redirect(w, r, routes.Map[routes.Root], http.StatusFound)
+					return
+				}
+				h.HomePage(w, r)
+			},
 		},
 	}
 }

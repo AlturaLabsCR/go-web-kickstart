@@ -38,9 +38,7 @@ func (s *Store[T]) refresh(w http.ResponseWriter, r *http.Request, claims *Claim
 		return err
 	}
 
-	if s.params.L2Cache != nil {
-		_ = s.params.L2Cache.Set(ctx, claims.SessionID, sessionStr)
-	}
+	_ = s.params.L2Cache.Set(ctx, claims.SessionID, sessionStr)
 
 	return s.params.Cache.Set(ctx, claims.SessionID, sessionStr)
 }

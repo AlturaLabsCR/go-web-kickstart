@@ -45,7 +45,7 @@ func NewPostgres(
 	p := &Postgres{
 		db:      pool,
 		queries: db.New(pool),
-		cache:   database.NoopCache{},
+		cache:   cache.NoopCache{},
 	}
 
 	for _, opt := range opts {

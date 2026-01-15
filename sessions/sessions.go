@@ -45,6 +45,10 @@ func NewStore[T any](params StoreParams) (*Store[T], error) {
 		return nil, ErrBadCache
 	}
 
+	if params.L2Cache == nil {
+		params.L2Cache = cache.NoopCache{}
+	}
+
 	if params.CookiePrefix == "" {
 		params.CookiePrefix = "session."
 	}
@@ -101,9 +105,7 @@ func (s *Store[T]) Set(ctx context.Context, w http.ResponseWriter, sessionUser s
 		return err
 	}
 
-	if s.params.L2Cache != nil {
-		_ = s.params.L2Cache.Set(ctx, sessionID, sessionStr)
-	}
+	_ = s.params.L2Cache.Set(ctx, sessionID, sessionStr)
 
 	return s.params.Cache.Set(ctx, sessionID, sessionStr)
 }
@@ -175,9 +177,7 @@ func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
 		Secure:   true,
 	})
 
-	if s.params.L2Cache != nil {
-		_ = s.params.L2Cache.Del(r.Context(), claims.SessionID)
-	}
+	_ = s.params.L2Cache.Del(r.Context(), claims.SessionID)
 
 	return s.params.Cache.Del(r.Context(), claims.SessionID)
 }

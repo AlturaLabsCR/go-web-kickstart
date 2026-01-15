@@ -42,7 +42,7 @@ func NewSqlite(connStr string, opts ...SqliteOption) (*Sqlite, error) {
 	s := &Sqlite{
 		db:      conn,
 		queries: db.New(conn),
-		cache:   database.NoopCache{},
+		cache:   cache.NoopCache{},
 	}
 
 	for _, opt := range opts {

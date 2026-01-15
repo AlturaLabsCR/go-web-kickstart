@@ -55,16 +55,32 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handler) LoginWithFacebook(w http.ResponseWriter, r *http.Request) {
+	h.Log().Debug("authenticating with facebook")
+
+	provider := &providers.FacebookProvider{
+		AppID:      config.Config.AuthProviders.Facebook.AppID,
+		AppSecret:  config.Config.AuthProviders.Facebook.AppSecret,
+		HTTPClient: http.DefaultClient,
+	}
+
+	h.loginWithProvider(provider, w, r)
+}
+
 func (h *Handler) LoginWithGoogle(w http.ResponseWriter, r *http.Request) {
 	h.Log().Debug("authenticating with google")
 
+	provider := &providers.GoogleProvider{
+		ClientID: config.Config.AuthProviders.Google.ClientID,
+	}
+
+	h.loginWithProvider(provider, w, r)
+}
+
+func (h *Handler) loginWithProvider(provider providers.UserIDProvider, w http.ResponseWriter, r *http.Request) {
 	if _, err := h.Sess().Validate(w, r); err == nil {
 		http.Redirect(w, r, routes.Map[routes.Protected], http.StatusSeeOther)
 		return
-	}
-
-	provider := providers.GoogleProvider{
-		ClientID: config.Config.AuthProviders.Google.ClientID,
 	}
 
 	userID, err := provider.UserID(r)
