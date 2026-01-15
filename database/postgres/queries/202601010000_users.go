@@ -10,7 +10,7 @@ import (
 )
 
 func (pq *PostgresQuerier) GetUser(ctx context.Context, userID string) (*models.User, error) {
-	if userStr, err := pq.cache.Get(ctx, userID); err == nil {
+	if userStr, err := pq.cache.Get(ctx, models.UserCacheScopePrefix+userID); err == nil {
 		user := &models.User{}
 		if err := json.Unmarshal([]byte(userStr), user); err == nil {
 			return user, nil
@@ -28,7 +28,7 @@ func (pq *PostgresQuerier) GetUser(ctx context.Context, userID string) (*models.
 	}
 
 	if b, err := json.Marshal(user); err == nil {
-		_ = pq.cache.Set(ctx, userID, string(b))
+		_ = pq.cache.Set(ctx, models.UserCacheScopePrefix+userID, string(b))
 	}
 
 	return user, nil
@@ -53,12 +53,12 @@ func (pq *PostgresQuerier) SetUser(ctx context.Context, id string) error {
 		return err
 	}
 
-	return pq.cache.Set(ctx, id, string(userStr))
+	return pq.cache.Set(ctx, models.UserCacheScopePrefix+id, string(userStr))
 }
 
 func (pq *PostgresQuerier) DelUser(ctx context.Context, id string) error {
 	if err := pq.queries.DelUser(ctx, id); err != nil {
 		return err
 	}
-	return pq.cache.Del(ctx, id)
+	return pq.cache.Del(ctx, models.UserCacheScopePrefix+id)
 }

@@ -28,7 +28,7 @@ func (pq *PostgresQuerier) GetConfigs(ctx context.Context) ([]models.Config, err
 }
 
 func (pq *PostgresQuerier) GetConfig(ctx context.Context, name string) (string, error) {
-	value, err := pq.cache.Get(ctx, name)
+	value, err := pq.cache.Get(ctx, models.ConfigCacheScopePrefix+name)
 	if err == nil {
 		return value, nil
 	}
@@ -45,7 +45,7 @@ func (pq *PostgresQuerier) GetConfig(ctx context.Context, name string) (string, 
 }
 
 func (pq *PostgresQuerier) SetConfig(ctx context.Context, name, value string) error {
-	if err := pq.cache.Set(ctx, name, value); err != nil {
+	if err := pq.cache.Set(ctx, models.ConfigCacheScopePrefix+name, value); err != nil {
 		return err
 	}
 

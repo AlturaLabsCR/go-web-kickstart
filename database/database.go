@@ -44,12 +44,12 @@ func UpsertUser(ctx context.Context, d Database, userID string) (perms []string,
 				return err
 			}
 
-			initialized, err := q.GetConfig(ctx, "config.initialized")
+			initialized, err := q.GetConfig(ctx, models.ConfigInitialized)
 			if err != nil {
 				return err
 			}
 
-			if initialized == "true" {
+			if initialized == models.ConfigInitializedTrue {
 				if err := q.SetRole(ctx, userID, "role.default"); err != nil {
 					return err
 				}
@@ -58,7 +58,7 @@ func UpsertUser(ctx context.Context, d Database, userID string) (perms []string,
 					return err
 				}
 
-				if err := q.SetConfig(ctx, "config.initialized", "true"); err != nil {
+				if err := q.SetConfig(ctx, models.ConfigInitialized, models.ConfigInitializedTrue); err != nil {
 					return err
 				}
 			}

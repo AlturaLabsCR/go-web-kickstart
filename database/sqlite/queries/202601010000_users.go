@@ -10,7 +10,7 @@ import (
 )
 
 func (sq *SqliteQuerier) GetUser(ctx context.Context, userID string) (*models.User, error) {
-	if userStr, err := sq.cache.Get(ctx, userID); err == nil {
+	if userStr, err := sq.cache.Get(ctx, models.UserCacheScopePrefix+userID); err == nil {
 		user := &models.User{}
 		if err := json.Unmarshal([]byte(userStr), user); err == nil {
 			return user, nil
@@ -28,7 +28,7 @@ func (sq *SqliteQuerier) GetUser(ctx context.Context, userID string) (*models.Us
 	}
 
 	if b, err := json.Marshal(user); err == nil {
-		_ = sq.cache.Set(ctx, userID, string(b))
+		_ = sq.cache.Set(ctx, models.UserCacheScopePrefix+userID, string(b))
 	}
 
 	return user, nil
@@ -53,12 +53,12 @@ func (sq *SqliteQuerier) SetUser(ctx context.Context, id string) error {
 		return err
 	}
 
-	return sq.cache.Set(ctx, id, string(userStr))
+	return sq.cache.Set(ctx, models.UserCacheScopePrefix+id, string(userStr))
 }
 
 func (sq *SqliteQuerier) DelUser(ctx context.Context, id string) error {
 	if err := sq.queries.DelUser(ctx, id); err != nil {
 		return err
 	}
-	return sq.cache.Del(ctx, id)
+	return sq.cache.Del(ctx, models.UserCacheScopePrefix+id)
 }

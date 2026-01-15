@@ -27,7 +27,7 @@ func (sq *SqliteQuerier) GetConfigs(ctx context.Context) ([]models.Config, error
 }
 
 func (sq *SqliteQuerier) GetConfig(ctx context.Context, name string) (string, error) {
-	value, err := sq.cache.Get(ctx, name)
+	value, err := sq.cache.Get(ctx, models.ConfigCacheScopePrefix+name)
 	if err == nil {
 		return value, nil
 	}
@@ -44,7 +44,7 @@ func (sq *SqliteQuerier) GetConfig(ctx context.Context, name string) (string, er
 }
 
 func (sq *SqliteQuerier) SetConfig(ctx context.Context, name, value string) error {
-	if err := sq.cache.Set(ctx, name, value); err != nil {
+	if err := sq.cache.Set(ctx, models.ConfigCacheScopePrefix+name, value); err != nil {
 		return err
 	}
 
