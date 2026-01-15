@@ -10,7 +10,7 @@ import (
 type endpoint struct {
 	method  string
 	path    string
-	handler http.Handler
+	handler http.HandlerFunc
 }
 
 func registerRoutes(
@@ -23,7 +23,7 @@ func registerRoutes(
 		if e.method != "" {
 			pattern = e.method + " " + e.path
 		}
-		mux.Handle(pattern, e.handler)
+		mux.HandleFunc(pattern, e.handler)
 	}
 }
 

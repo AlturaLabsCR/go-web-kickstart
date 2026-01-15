@@ -22,6 +22,18 @@ type Querier interface {
 	GetAll(ctx context.Context) (values map[string]string, err error)
 
 	GetUser(ctx context.Context, id string) (*models.User, error)
-	SetUser(ctx context.Context, id string, user *models.User) error
+	SetUser(ctx context.Context, userID string) error
 	DelUser(ctx context.Context, id string) error
+}
+
+func UpsertUser(ctx context.Context, d Database, userID string) error {
+	if _, err := d.Querier().GetUser(ctx, userID); err == nil {
+		return nil
+	}
+
+	if err := d.Querier().SetUser(ctx, userID); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -34,7 +34,13 @@ func (pq *PostgresQuerier) GetUser(ctx context.Context, userID string) (*models.
 	return user, nil
 }
 
-func (pq *PostgresQuerier) SetUser(ctx context.Context, id string, user *models.User) error {
+func (pq *PostgresQuerier) SetUser(ctx context.Context, id string) error {
+	createdAt := time.Now()
+	user := &models.User{
+		ID:        id,
+		CreatedAt: createdAt,
+	}
+
 	userStr, err := json.Marshal(user)
 	if err != nil {
 		return err
@@ -42,7 +48,7 @@ func (pq *PostgresQuerier) SetUser(ctx context.Context, id string, user *models.
 
 	if err := pq.queries.SetUser(ctx, db.SetUserParams{
 		ID:        id,
-		CreatedAt: user.CreatedAt.Unix(),
+		CreatedAt: createdAt.Unix(),
 	}); err != nil {
 		return err
 	}

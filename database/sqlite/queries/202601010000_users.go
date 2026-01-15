@@ -34,7 +34,13 @@ func (sq *SqliteQuerier) GetUser(ctx context.Context, userID string) (*models.Us
 	return user, nil
 }
 
-func (sq *SqliteQuerier) SetUser(ctx context.Context, id string, user *models.User) error {
+func (sq *SqliteQuerier) SetUser(ctx context.Context, id string) error {
+	createdAt := time.Now()
+	user := &models.User{
+		ID:        id,
+		CreatedAt: createdAt,
+	}
+
 	userStr, err := json.Marshal(user)
 	if err != nil {
 		return err
@@ -42,7 +48,7 @@ func (sq *SqliteQuerier) SetUser(ctx context.Context, id string, user *models.Us
 
 	if err := sq.queries.SetUser(ctx, db.SetUserParams{
 		ID:        id,
-		CreatedAt: user.CreatedAt.Unix(),
+		CreatedAt: createdAt.Unix(),
 	}); err != nil {
 		return err
 	}

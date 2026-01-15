@@ -3,11 +3,15 @@ package handler
 import (
 	"net/http"
 
+	providers "app/auth"
 	"app/config"
 	"app/config/routes"
+	"app/database"
 	"app/i18n"
 	"app/templates/auth"
 	"app/templates/base"
+
+	"github.com/mileusna/useragent"
 )
 
 func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
@@ -49,4 +53,46 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 	if err := base.Page(params, tr, main, routes.Map[routes.Login]).Render(ctx, w); err != nil {
 		h.Log().Error("error rendering template", "error", err)
 	}
+}
+
+func (h *Handler) LoginWithGoogle(w http.ResponseWriter, r *http.Request) {
+	h.Log().Debug("authenticating with google")
+
+	if _, err := h.Sess().Validate(w, r); err == nil {
+		http.Redirect(w, r, routes.Map[routes.Protected], http.StatusSeeOther)
+		return
+	}
+
+	provider := providers.GoogleProvider{
+		ClientID: config.Config.AuthProviders.Google.ClientID,
+	}
+
+	userID, err := provider.UserID(r)
+	if err != nil {
+		h.Log().Debug("error getting userID", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	ua := useragent.Parse(r.UserAgent())
+	sessionData := &config.SessionData{
+		UserID: userID,
+		Agent:  ua.OS,
+		Perms:  []string{},
+	}
+
+	ctx := r.Context()
+	if err := database.UpsertUser(ctx, h.DB(), userID); err != nil {
+		h.Log().Debug("error upserting user", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	h.Log().Debug(
+		"logged user in",
+		"userID", userID,
+		"sessionData", sessionData,
+	)
+
+	http.Redirect(w, r, routes.Map[routes.Protected], http.StatusSeeOther)
 }

@@ -6,6 +6,7 @@ import "app/config/routes"
 
 templ body(tr func(string) string, main templ.Component, active string) {
 	<body>
+		<div class="hidden" id={ RedirectID }></div>
 		@h(tr, active)
 		@m(main)
 		@f()
@@ -66,6 +67,6 @@ templ m(content templ.Component) {
 
 templ f() {
 	<footer>
-		Copyright © { config.Config.Year } { config.AppTitle }
+		Copyright (c) { config.Config.Year } { config.AppTitle }
 	</footer>
 }

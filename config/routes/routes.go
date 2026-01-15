@@ -10,6 +10,7 @@ const (
 	About
 	GoogleAuth
 	FacebookAuth
+	Protected
 )
 
 var Map = map[Route]string{
@@ -19,6 +20,7 @@ var Map = map[Route]string{
 	About:        "/about",
 	GoogleAuth:   "/auth/google",
 	FacebookAuth: "/auth/facebook",
+	Protected:    "/protected",
 }
 
 func PrefixEndpoints(prefix string) {

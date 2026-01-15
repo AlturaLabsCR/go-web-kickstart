@@ -11,6 +11,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/joho/godotenv v1.5.1
+	github.com/mileusna/useragent v1.3.5
 	github.com/redis/go-redis/v9 v9.17.2
 	google.golang.org/api v0.258.0
 	modernc.org/sqlite v1.44.0

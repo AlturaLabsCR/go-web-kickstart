@@ -15,17 +15,27 @@ func publicEndpoints(h *handler.Handler) []endpoint {
 		{
 			method:  http.MethodGet,
 			path:    routes.Map[routes.Root],
-			handler: http.HandlerFunc(h.HomePage),
+			handler: h.HomePage,
 		},
 		{
 			method:  http.MethodGet,
 			path:    routes.Map[routes.Login],
-			handler: http.HandlerFunc(h.LoginPage),
+			handler: h.LoginPage,
 		},
 		{
 			method:  http.MethodGet,
 			path:    routes.Map[routes.About],
-			handler: http.HandlerFunc(h.AboutPage),
+			handler: h.AboutPage,
+		},
+		{
+			method:  http.MethodPost,
+			path:    routes.Map[routes.GoogleAuth],
+			handler: h.AboutPage,
+		},
+		{
+			method:  http.MethodGet,
+			path:    routes.Map[routes.FacebookAuth],
+			handler: h.AboutPage,
 		},
 	}
 }
@@ -51,7 +61,7 @@ func assetsEndpoints(fs embed.FS) []endpoint {
 		{
 			method:  http.MethodGet,
 			path:    routes.Map[routes.Assets],
-			handler: cache(handler),
+			handler: cache(handler).(http.HandlerFunc),
 		},
 	}
 }

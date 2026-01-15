@@ -4,7 +4,7 @@ templ google(googleClientID, googleVerifyEndpoint string) {
 	if googleClientID != "" {
 		<script src="https://accounts.google.com/gsi/client" async></script>
 		<script>
-    function handleCredentialResponse({ credential: token }) {
+    function handleGoogleCredentials({ credential: token }) {
       const form = document.createElement("form");
       form.method = "POST";
       form.action = {{ googleVerifyEndpoint }};
@@ -18,13 +18,12 @@ templ google(googleClientID, googleVerifyEndpoint string) {
       document.body.appendChild(form);
       form.submit();
     }
-  </script>
+    </script>
 		<div
 			id="g_id_onload"
 			data-auto_prompt="false"
-			data-callback="handleCredentialResponse"
+			data-callback="handleGoogleCredentials"
 			data-client_id={ googleClientID }
-			class="hidden"
 		></div>
 		<div
 			class="g_id_signin"
