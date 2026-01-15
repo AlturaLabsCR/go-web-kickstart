@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"app/cache"
 	"app/database"
 	"app/database/postgres"
 	"app/database/sqlite"
@@ -38,21 +39,11 @@ func InitDB(ctx context.Context) (database.Database, error) {
 }
 
 func initSqlite(connStr string) (*sqlite.Sqlite, error) {
-	sq, err := sqlite.NewSqlite(connStr)
-	if err != nil {
-		return nil, err
-	}
-
-	return sq, nil
+	return sqlite.NewSqlite(connStr, sqlite.WithCache(cache.NewMemoryStore()))
 }
 
 func initPostgres(ctx context.Context, connStr string) (*postgres.Postgres, error) {
-	pq, err := postgres.NewPostgres(ctx, connStr)
-	if err != nil {
-		return nil, err
-	}
-
-	return pq, nil
+	return postgres.NewPostgres(ctx, connStr, postgres.WithCache(cache.NewMemoryStore()))
 }
 
 func getDriver(connStr string) (string, error) {
