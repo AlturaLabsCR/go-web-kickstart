@@ -33,6 +33,11 @@ func publicEndpoints(h *handler.Handler) []endpoint {
 			handler: h.AboutPage,
 		},
 		{
+			method:  http.MethodGet,
+			path:    routes.Map[routes.Protected],
+			handler: h.ProtectedPage,
+		},
+		{
 			method: http.MethodGet,
 			path:   routes.Map[routes.Root],
 			handler: func(w http.ResponseWriter, r *http.Request) {

@@ -32,7 +32,7 @@ templ h(tr func(string) string, active string) {
 				</li>
 				<li>
 					<a
-						if active == routes.Map[routes.Login] {
+						if active == routes.Map[routes.Login] || active == routes.Map[routes.Protected] {
 							class="active"
 						} else {
 							href={ routes.Map[routes.Login] }

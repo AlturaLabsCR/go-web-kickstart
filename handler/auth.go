@@ -15,6 +15,13 @@ import (
 )
 
 func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
+	if _, err := h.Sess().Validate(w, r); err == nil {
+		http.Redirect(w, r, routes.Map[routes.Protected], http.StatusSeeOther)
+		return
+	} else {
+		h.Log().Debug("error validating", "error", err)
+	}
+
 	ctx := r.Context()
 
 	locale := ""
@@ -55,28 +62,6 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) LoginWithFacebook(w http.ResponseWriter, r *http.Request) {
-	h.Log().Debug("authenticating with facebook")
-
-	provider := &providers.FacebookProvider{
-		AppID:      config.Config.AuthProviders.Facebook.AppID,
-		AppSecret:  config.Config.AuthProviders.Facebook.AppSecret,
-		HTTPClient: http.DefaultClient,
-	}
-
-	h.loginWithProvider(provider, w, r)
-}
-
-func (h *Handler) LoginWithGoogle(w http.ResponseWriter, r *http.Request) {
-	h.Log().Debug("authenticating with google")
-
-	provider := &providers.GoogleProvider{
-		ClientID: config.Config.AuthProviders.Google.ClientID,
-	}
-
-	h.loginWithProvider(provider, w, r)
-}
-
 func (h *Handler) loginWithProvider(provider providers.UserIDProvider, w http.ResponseWriter, r *http.Request) {
 	if _, err := h.Sess().Validate(w, r); err == nil {
 		http.Redirect(w, r, routes.Map[routes.Protected], http.StatusSeeOther)
@@ -99,7 +84,13 @@ func (h *Handler) loginWithProvider(provider providers.UserIDProvider, w http.Re
 
 	ctx := r.Context()
 	if err := database.UpsertUser(ctx, h.DB(), userID); err != nil {
-		h.Log().Debug("error upserting user", "error", err)
+		h.Log().Error("error upserting user", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.Sess().Set(ctx, w, userID, sessionData); err != nil {
+		h.Log().Error("error setting session", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -111,4 +102,26 @@ func (h *Handler) loginWithProvider(provider providers.UserIDProvider, w http.Re
 	)
 
 	http.Redirect(w, r, routes.Map[routes.Protected], http.StatusSeeOther)
+}
+
+func (h *Handler) LoginWithFacebook(w http.ResponseWriter, r *http.Request) {
+	h.Log().Debug("authenticating with facebook")
+
+	provider := &providers.FacebookProvider{
+		AppID:      config.Config.AuthProviders.Facebook.AppID,
+		AppSecret:  config.Config.AuthProviders.Facebook.AppSecret,
+		HTTPClient: http.DefaultClient,
+	}
+
+	h.loginWithProvider(provider, w, r)
+}
+
+func (h *Handler) LoginWithGoogle(w http.ResponseWriter, r *http.Request) {
+	h.Log().Debug("authenticating with google")
+
+	provider := &providers.GoogleProvider{
+		ClientID: config.Config.AuthProviders.Google.ClientID,
+	}
+
+	h.loginWithProvider(provider, w, r)
 }

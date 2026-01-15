@@ -29,24 +29,40 @@ type StoreParams struct {
 	Cache   cache.Cache
 	L2Cache cache.Cache // optional
 
-	CookiePrefix   string        // defaults to 'session.'
-	CookiePath     string        // defaults to '/'
-	SessionTTL     time.Duration // defaults to time.Hour * 24 * 30 = 1m
-	CookieSameSite http.SameSite // defaults tu http.SameSiteLaxMode
-	StoreSecret    string        // defaults to generated string
+	NamespacePrefix string        // defaults to 'session:'
+	CookiePrefix    string        // defaults to 'session.'
+	CookiePath      string        // defaults to '/'
+	SessionTTL      time.Duration // defaults to time.Hour * 24 * 30 = 1m
+	CookieSameSite  http.SameSite // defaults tu http.SameSiteLaxMode
+	StoreSecret     string        // defaults to generated string
 }
 
 type Store[T any] struct {
 	params StoreParams
 }
 
-func NewStore[T any](params StoreParams) (*Store[T], error) {
+func NewStore[T any](ctx context.Context, params StoreParams) (*Store[T], error) {
 	if params.Cache == nil {
 		return nil, ErrBadCache
 	}
 
 	if params.L2Cache == nil {
 		params.L2Cache = cache.NoopCache{}
+	} else {
+		elems, err := params.L2Cache.GetAll(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for key, value := range elems {
+			err := params.Cache.Set(ctx, key, value)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if params.NamespacePrefix == "" {
+		params.NamespacePrefix = "session:"
 	}
 
 	if params.CookiePrefix == "" {
@@ -105,9 +121,9 @@ func (s *Store[T]) Set(ctx context.Context, w http.ResponseWriter, sessionUser s
 		return err
 	}
 
-	_ = s.params.L2Cache.Set(ctx, sessionID, sessionStr)
+	_ = s.params.L2Cache.Set(ctx, s.params.NamespacePrefix+sessionID, sessionStr)
 
-	return s.params.Cache.Set(ctx, sessionID, sessionStr)
+	return s.params.Cache.Set(ctx, s.params.NamespacePrefix+sessionID, sessionStr)
 }
 
 func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (*T, error) {
@@ -123,7 +139,7 @@ func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (*T, error) 
 		return nil, err
 	}
 
-	sessionStr, err := s.params.Cache.Get(ctx, claims.SessionID)
+	sessionStr, err := s.params.Cache.Get(ctx, s.params.NamespacePrefix+claims.SessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -177,9 +193,9 @@ func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
 		Secure:   true,
 	})
 
-	if err := s.params.L2Cache.Del(r.Context(), claims.SessionID); err != nil {
+	if err := s.params.L2Cache.Del(r.Context(), s.params.NamespacePrefix+claims.SessionID); err != nil {
 		return err
 	}
 
-	return s.params.Cache.Del(r.Context(), claims.SessionID)
+	return s.params.Cache.Del(r.Context(), s.params.NamespacePrefix+claims.SessionID)
 }
