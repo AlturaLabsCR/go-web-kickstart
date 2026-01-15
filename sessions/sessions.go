@@ -177,7 +177,9 @@ func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
 		Secure:   true,
 	})
 
-	_ = s.params.L2Cache.Del(r.Context(), claims.SessionID)
+	if err := s.params.L2Cache.Del(r.Context(), claims.SessionID); err != nil {
+		return err
+	}
 
 	return s.params.Cache.Del(r.Context(), claims.SessionID)
 }
