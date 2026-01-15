@@ -14,7 +14,8 @@ input:not([type="checkbox"], [type="radio"]), button, select {
   bg-(--theme-color-bg-secondary)
   w-full
   my-2
-  p-4
+  py-2.5
+  px-4
   text-lg
   border
   border-(--theme-color-separator)
