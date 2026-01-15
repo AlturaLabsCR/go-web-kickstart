@@ -1,8 +1,50 @@
 package protected
 
 import "app/config"
+import "app/config/routes"
+import "strings"
 
-templ ProtectedMain() {
-	<h1>{ config.AppTitle }</h1>
-	<p>templates/protected/protected.templ</p>
+templ ProtectedMain(tr func(string) string, session *config.SessionData, active string) {
+	<nav class="bg-black/5 dark:bg-white/5 py-3 px-8 rounded-full">
+		<ul>
+			<li>
+				<a
+					if active == routes.Map[routes.Protected] {
+						class="active"
+					} else {
+						href="#"
+					}
+				>{ tr("protected.user") }</a>
+			</li>
+			<li>
+				<a
+					if active == routes.Map[routes.Protected] {
+						class="active"
+					} else {
+						href="#"
+					}
+				>{ tr("protected.user") }</a>
+			</li>
+		</ul>
+	</nav>
+	switch active {
+		case routes.Map[routes.Protected]:
+			@User(tr, session)
+	}
+}
+
+templ User(tr func(string) string, session *config.SessionData) {
+	<div class="rounded-lg border border-black/20 dark:border-white/10 shadow-lg p-4 my-4">
+		if session.UserName == "" {
+			<h1>{ tr("welcome") } { session.UserName }!</h1>
+		}
+		<small>
+			<div>{ tr("device") }: { session.Agent }</div>
+			<div>{ tr("permissions") }: { permsToStr(session.Perms) }</div>
+		</small>
+	</div>
+}
+
+func permsToStr(perms []string) string {
+	return strings.Join(perms, " ,")
 }

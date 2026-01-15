@@ -35,7 +35,7 @@ func Gzip(next http.Handler) http.Handler {
 		w.Header().Set(contentEncodingHeader, gzipHeaderValue)
 
 		gz := gzip.NewWriter(w)
-		defer gz.Close()
+		defer func() { _ = gz.Close() }()
 
 		gzw := gzipResponseWriter{
 			ResponseWriter: w,

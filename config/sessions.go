@@ -1,7 +1,8 @@
 package config
 
 type SessionData struct {
-	UserID string
-	Agent  string
-	Perms  []string
+	UserID   string
+	UserName string
+	Agent    string
+	Perms    []string
 }

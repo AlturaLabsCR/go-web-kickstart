@@ -3,22 +3,24 @@ package handler
 import (
 	"net/http"
 
+	"app/config"
 	"app/config/routes"
 	"app/templates/base"
 	"app/templates/protected"
 )
 
 func (h *Handler) ProtectedPage(w http.ResponseWriter, r *http.Request) {
-	if _, err := h.Sess().Validate(w, r); err != nil {
-		http.Redirect(w, r, routes.Map[routes.Login], http.StatusSeeOther)
+	ctx := r.Context()
+
+	session, ok := r.Context().Value(SessionData).(*config.SessionData)
+	if !ok {
+		http.Error(w, "session not found", http.StatusUnauthorized)
 		return
 	}
 
-	ctx := r.Context()
-
-	main := protected.ProtectedMain()
-
 	tr := h.Tr(r)
+
+	main := protected.ProtectedMain(tr, session, routes.Map[routes.Protected])
 
 	params := base.HeadParams{
 		Subtitle:    tr("nav.account"),

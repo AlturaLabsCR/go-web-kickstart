@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 
 	providers "app/auth"
@@ -13,6 +14,10 @@ import (
 
 	"github.com/mileusna/useragent"
 )
+
+type SessionDataKey string
+
+const SessionData SessionDataKey = "session.data"
 
 func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 	if _, err := h.Sess().Validate(w, r); err == nil {
@@ -102,6 +107,20 @@ func (h *Handler) loginWithProvider(provider providers.UserIDProvider, w http.Re
 	)
 
 	http.Redirect(w, r, routes.Map[routes.Protected], http.StatusSeeOther)
+}
+
+func (h *Handler) Validate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sessionData, err := h.Sess().Validate(w, r)
+		if err != nil {
+			http.Redirect(w, r, routes.Map[routes.Login], http.StatusSeeOther)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), SessionData, sessionData)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func (h *Handler) LoginWithFacebook(w http.ResponseWriter, r *http.Request) {

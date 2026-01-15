@@ -10,6 +10,16 @@ import (
 	"app/middleware"
 )
 
+func protectedEndpoints(h *handler.Handler) []endpoint {
+	return []endpoint{
+		{
+			method:  http.MethodGet,
+			path:    routes.Map[routes.Protected],
+			handler: wrap(h.ProtectedPage, h.Validate),
+		},
+	}
+}
+
 func publicEndpoints(h *handler.Handler) []endpoint {
 	return []endpoint{
 		{
@@ -30,12 +40,7 @@ func publicEndpoints(h *handler.Handler) []endpoint {
 		{
 			method:  http.MethodGet,
 			path:    routes.Map[routes.FacebookAuth],
-			handler: h.AboutPage,
-		},
-		{
-			method:  http.MethodGet,
-			path:    routes.Map[routes.Protected],
-			handler: h.ProtectedPage,
+			handler: h.LoginWithFacebook,
 		},
 		{
 			method: http.MethodGet,
@@ -74,5 +79,11 @@ func assetsEndpoints(fs embed.FS) []endpoint {
 			path:    routes.Map[routes.Assets],
 			handler: cache(handler).(http.HandlerFunc),
 		},
+	}
+}
+
+func wrap(h http.HandlerFunc, m middleware.Middleware) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		m(http.HandlerFunc(h)).ServeHTTP(w, r)
 	}
 }

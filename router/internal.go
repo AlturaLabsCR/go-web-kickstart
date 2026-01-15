@@ -32,6 +32,7 @@ func endpoints(h *handler.Handler, fs embed.FS) []endpoint {
 
 	endpoints = append(endpoints, publicEndpoints(h)...)
 	endpoints = append(endpoints, assetsEndpoints(fs)...)
+	endpoints = append(endpoints, protectedEndpoints(h)...)
 
 	return endpoints
 }
