@@ -58,3 +58,4 @@ Visit [localhost:8080](http://localhost:8080)
 - [ ] Logout button
 - [ ] Light user management
 - [ ] Sidebar layout in protected view
+- [ ] Tests
