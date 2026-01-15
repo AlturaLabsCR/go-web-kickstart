@@ -24,16 +24,28 @@ type Querier interface {
 	GetUser(ctx context.Context, id string) (*models.User, error)
 	SetUser(ctx context.Context, userID string) error
 	DelUser(ctx context.Context, id string) error
+
+	// TODO: Cache permissions
+	SetRole(ctx context.Context, userID, roleName string) (err error)
+	GetPermissions(ctx context.Context, userID string) (perms []string, err error)
 }
 
-func UpsertUser(ctx context.Context, d Database, userID string) error {
-	if _, err := d.Querier().GetUser(ctx, userID); err == nil {
-		return nil
-	}
+func UpsertUser(ctx context.Context, d Database, userID string) (perms []string, err error) {
+	err = d.WithTx(ctx, func(q Querier) error {
+		_, err := q.GetUser(ctx, userID)
+		if err != nil {
+			if err := q.SetUser(ctx, userID); err != nil {
+				return err
+			}
 
-	if err := d.Querier().SetUser(ctx, userID); err != nil {
+			if err := q.SetRole(ctx, userID, "role.default"); err != nil {
+				return err
+			}
+		}
+
+		perms, err = q.GetPermissions(ctx, userID)
 		return err
-	}
+	})
 
-	return nil
+	return perms, err
 }

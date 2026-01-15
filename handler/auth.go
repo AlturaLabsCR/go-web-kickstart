@@ -80,18 +80,19 @@ func (h *Handler) loginWithProvider(provider providers.UserIDProvider, w http.Re
 		return
 	}
 
+	ctx := r.Context()
+	perms, err := database.UpsertUser(ctx, h.DB(), userID)
+	if err != nil {
+		h.Log().Error("error upserting user", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	ua := useragent.Parse(r.UserAgent())
 	sessionData := &config.SessionData{
 		UserID: userID,
 		Agent:  ua.OS,
-		Perms:  []string{},
-	}
-
-	ctx := r.Context()
-	if err := database.UpsertUser(ctx, h.DB(), userID); err != nil {
-		h.Log().Error("error upserting user", "error", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		Perms:  perms,
 	}
 
 	if err := h.Sess().Set(ctx, w, userID, sessionData); err != nil {
