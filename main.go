@@ -45,7 +45,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	sessions, err := config.InitSessions(database)
+	sessions, err := config.InitSessions(ctx, database)
 	if err != nil {
 		logger.Error("failed to init sessions", "error", err)
 		os.Exit(1)
