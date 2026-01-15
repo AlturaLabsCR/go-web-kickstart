@@ -21,9 +21,15 @@ type Querier interface {
 	Del(ctx context.Context, key string) (err error)
 	GetAll(ctx context.Context) (values map[string]string, err error)
 
+	// Users
 	GetUser(ctx context.Context, id string) (*models.User, error)
 	SetUser(ctx context.Context, userID string) error
 	DelUser(ctx context.Context, id string) error
+
+	// Configs
+	GetConfigs(ctx context.Context) ([]models.Config, error)
+	GetConfig(ctx context.Context, name string) (value string, err error)
+	SetConfig(ctx context.Context, name, value string) error
 
 	// TODO: Cache permissions
 	SetRole(ctx context.Context, userID, roleName string) (err error)
@@ -38,8 +44,23 @@ func UpsertUser(ctx context.Context, d Database, userID string) (perms []string,
 				return err
 			}
 
-			if err := q.SetRole(ctx, userID, "role.default"); err != nil {
+			initialized, err := q.GetConfig(ctx, "config.initialized")
+			if err != nil {
 				return err
+			}
+
+			if initialized == "true" {
+				if err := q.SetRole(ctx, userID, "role.default"); err != nil {
+					return err
+				}
+			} else {
+				if err := q.SetRole(ctx, userID, "role.admin"); err != nil {
+					return err
+				}
+
+				if err := q.SetConfig(ctx, "config.initialized", "true"); err != nil {
+					return err
+				}
 			}
 		}
 
