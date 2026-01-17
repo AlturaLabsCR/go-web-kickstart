@@ -1,41 +1,17 @@
 .alert {
-  @apply
-  flex
-  flex-col
-  gap-4
-  bg-(--theme-color-bg-secondary)
-  py-2
-  px-4
-  border-l-4
-  border-(--theme-color-separator)
-  rounded-md
 }
 
-.alert-heading {
-  @apply
-  font-bold
+.alert-header {
 }
 
 .alert-tip {
-  @apply
-  bg-(--theme-color-bg-tip)
-  border-(--theme-color-border-tip)
 }
 
 .alert-important {
-  @apply
-  bg-(--theme-color-bg-imp)
-  border-(--theme-color-border-imp)
 }
 
 .alert-warning {
-  @apply
-  bg-(--theme-color-bg-warn)
-  border-(--theme-color-border-warn)
 }
 
 .alert-caution {
-  @apply
-  bg-(--theme-color-bg-caut)
-  border-(--theme-color-border-caut)
 }

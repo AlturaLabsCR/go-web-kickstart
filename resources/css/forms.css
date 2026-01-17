@@ -1,3 +1,4 @@
+/*
 input:not([type="checkbox"], [type="radio"]), button, select {
   &:disabled {
     @apply
@@ -14,19 +15,18 @@ input:not([type="checkbox"], [type="radio"]), button, select {
   &:focus {
     @apply
     outline-2
-    outline-(--theme-color-primary)/30
+    outline-(--c-pri)/30
   }
 
   @apply
-  bg-(--theme-color-bg-secondary)
-  w-full
+  bg-(--c-bg-sec)
   my-2
   py-2.5
   px-4
   text-lg
   border
-  border-(--theme-color-separator)
-  rounded-md
+  border-(--c-sep)
+  rounded-lg
 }
 
 label:has(input:disabled) {
@@ -40,19 +40,22 @@ input[type="color"] {
 }
 
 button {
+  &:hover {
+    @apply
+    brightness-110
+  }
+
   @apply
-  bg-(--theme-color-button)
-  border-(--theme-color-button)
-  text-white
-  hover:brightness-110
+  bg-(--c-b)
+  border-(--c-b)
 }
 
 input:is([type="checkbox"], [type="radio"]) {
   @apply
   scale-200
   m-4
-  accent-(--theme-color-button)
-  cursor-pointer
+  accent-(--c-b)
   focus:ring-1
-  focus:ring-(--theme-color-primary)/30
+  focus:ring-(--c-pri)/30
 }
+*/
