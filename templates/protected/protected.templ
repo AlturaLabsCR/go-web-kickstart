@@ -1,19 +1,22 @@
 package protected
 
 import (
+	"time"
+
 	"app/config"
 	"app/config/routes"
 	"app/database/models"
 	"app/sessions"
 	"app/templates/utils"
-	"strings"
-	"time"
 )
 
 type ProtectedParams struct {
 	User  *models.UserMeta
 	Attrs *sessions.Session
 	Data  *config.SessionData
+
+	// Admin params
+	AllUsers []models.UserMeta
 }
 
 templ ProtectedMain(tr func(string) string, params ProtectedParams, active string) {
@@ -63,40 +66,11 @@ templ ProtectedMain(tr func(string) string, params ProtectedParams, active strin
 		case routes.Map[routes.ProtectedUser]:
 			@ProtectedUser(tr, params)
 		case routes.Map[routes.ProtectedAdmin]:
-			@ProtectedAdmin(tr, params)
+			@protectedAdmin(tr, params)
 	}
 }
 
 templ protected(tr func(string) string) {
 	<h1>Protected view</h1>
-	<p>templates/protected/protected.templ</p>
-}
-
-templ ProtectedUser(tr func(string) string, params ProtectedParams) {
-	<div id="onboarding">
-		if name := params.User.Name; name != "" {
-			<h1>{ tr("welcome") } { name }!</h1>
-		} else {
-			if models.HasPermission(params.User.Perms, "perm.change_name") {
-				<label>
-					<strong>{ tr("onboarding.input.name.label") }</strong>
-					<p>
-						{ tr("onboarding.input.name.description") }
-					</p>
-					<input
-						data-bind="onboarding-input-name"
-						placeholder={ tr("onboarding.input.name.placeholder") }
-					/>
-				</label>
-				@utils.BtnPost("onboarding-submit", routes.Map[routes.ProtectedUser], tr("onboarding.input.name.submit"))
-			}
-		}
-		<div><strong>{ tr("device") }</strong>: { params.Data.Agent }</div>
-		<div><strong>{ tr("permissions") }</strong>: { strings.Join(params.User.Perms, ", ") }</div>
-	</div>
-}
-
-templ ProtectedAdmin(tr func(string) string, params ProtectedParams) {
-	<h1>Manage users</h1>
 	<p>templates/protected/protected.templ</p>
 }

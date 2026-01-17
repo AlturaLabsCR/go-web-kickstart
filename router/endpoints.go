@@ -17,6 +17,7 @@ func protectedEndpoints(h *handler.Handler) []endpoint {
 		{http.MethodGet, routes.Map[routes.ProtectedUser], wrap(h.Validate, h.ProtectedPage)},
 		{http.MethodPost, routes.Map[routes.ProtectedUser], wrap(h.Validate, h.ProtectedUpdateUser)},
 		{http.MethodGet, routes.Map[routes.ProtectedAdmin], wrap(h.Validate, h.ProtectedAdmin)},
+		{http.MethodDelete, routes.Map[routes.ProtectedUser] + "{id}", wrap(h.Validate, h.ProtectedDeleteUser)},
 	}
 }
 

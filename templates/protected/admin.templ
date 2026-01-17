@@ -1,0 +1,45 @@
+package protected
+
+import (
+	"app/config/routes"
+	"app/database/models"
+	"app/templates/utils"
+	"strings"
+)
+
+templ protectedAdmin(tr func(string) string, params ProtectedParams) {
+	<h1>Manage users</h1>
+	<p>templates/protected/protected.templ</p>
+	@ProtectedAllUsers(tr, params.AllUsers, params.User.ID)
+}
+
+templ ProtectedAllUsers(tr func(string) string, allUsers []models.UserMeta, currentUserID string) {
+	<div id="admin-users">
+		<table>
+			<thead>
+				<th>{ tr("user.name") }</th>
+				<th>{ tr("user.perms") }</th>
+				<th></th>
+			</thead>
+			<tbody>
+				for _, u := range allUsers {
+					<tr>
+						<td>
+							if u.Name != "" {
+								{ u.Name }
+							} else {
+								{ u.ID }
+							}
+						</td>
+						<td>
+							<span>{ strings.Join(u.Perms, ", ") }</span>
+						</td>
+						<td>
+							@utils.BtnDelete("admin-users-delete", routes.Map[routes.ProtectedUser]+u.ID, tr("delete"), "disabled")
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}

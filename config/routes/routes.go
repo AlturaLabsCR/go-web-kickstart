@@ -26,7 +26,7 @@ var Map = map[Route]string{
 	FacebookAuth:   "/auth/facebook",
 	Logout:         "/logout",
 	Protected:      "/protected",
-	ProtectedUser:  "/protected/user",
+	ProtectedUser:  "/protected/user/",
 	ProtectedAdmin: "/protected/admin",
 }
 

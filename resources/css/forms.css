@@ -2,6 +2,13 @@ input:not([type="checkbox"], [type="radio"]), button, select {
   &:disabled {
     @apply
     opacity-50
+    pointer-events-none
+  }
+
+  &.disabled {
+    @apply
+    opacity-50
+    pointer-events-none
   }
 
   &:focus {
