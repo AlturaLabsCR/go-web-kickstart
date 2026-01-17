@@ -20,7 +20,14 @@ func (h *Handler) ProtectedPage(w http.ResponseWriter, r *http.Request) {
 
 	tr := h.Tr(r)
 
-	main := protected.ProtectedMain(tr, session, r.URL.Path)
+	userMeta, err := h.DB().Querier().GetUserMeta(ctx, session.UserID)
+	if err != nil {
+		h.Log().Error("error getting user meta", "error", err)
+		http.Error(w, "error getting user meta", http.StatusInternalServerError)
+		return
+	}
+
+	main := protected.ProtectedMain(tr, userMeta, session, r.URL.Path)
 
 	params := base.HeadParams{
 		Subtitle:    tr("nav.account"),

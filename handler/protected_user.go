@@ -42,8 +42,6 @@ func (h *Handler) ProtectedUpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session.UserName = payload.UserName
-
 	if err := h.Sess().Revoke(w, r); err != nil {
 		h.Log().Error("error revoking old session")
 		http.Error(w, "error revoking old session", http.StatusInternalServerError)
@@ -58,7 +56,14 @@ func (h *Handler) ProtectedUpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	tr := h.Tr(r)
 
-	if err := protected.ProtectedUser(tr, session).Render(ctx, w); err != nil {
+	userMeta, err := h.DB().Querier().GetUserMeta(ctx, session.UserID)
+	if err != nil {
+		h.Log().Error("error getting user meta", "error", err)
+		http.Error(w, "error getting user meta", http.StatusInternalServerError)
+		return
+	}
+
+	if err := protected.ProtectedUser(tr, userMeta, session).Render(ctx, w); err != nil {
 		h.Log().Error("error rendering template", "error", err)
 	}
 }

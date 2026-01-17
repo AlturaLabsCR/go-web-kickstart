@@ -2,7 +2,7 @@ package config
 
 type SessionData struct {
 	UserID   string
-	UserName string
 	Agent    string
-	Perms    []string
+	Created  int64
+	LastUsed int64
 }

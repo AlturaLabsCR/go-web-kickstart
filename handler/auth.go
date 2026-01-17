@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"net/http"
+	"time"
 
 	providers "app/auth"
 	"app/config"
@@ -82,11 +83,20 @@ func (h *Handler) loginWithProvider(provider providers.UserIDProvider, w http.Re
 	}
 
 	ctx := r.Context()
-	session, err := h.UpsertUser(ctx, h.DB(), r, userID)
-	if err != nil {
+
+	if err := h.UpsertUser(ctx, h.DB(), r, userID); err != nil {
 		h.Log().Error("error upserting user", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
+	}
+
+	ua := useragent.Parse(r.UserAgent())
+	now := time.Now().Unix()
+	session := &config.SessionData{
+		UserID:   userID,
+		Agent:    ua.OS,
+		Created:  now,
+		LastUsed: now,
 	}
 
 	if err := h.Sess().Set(ctx, w, userID, session); err != nil {
@@ -141,10 +151,8 @@ func (h *Handler) LoginWithGoogle(w http.ResponseWriter, r *http.Request) {
 	h.loginWithProvider(provider, w, r)
 }
 
-func (h *Handler) UpsertUser(ctx context.Context, d database.Database, r *http.Request, userID string) (*config.SessionData, error) {
-	perms := []string{}
+func (h *Handler) UpsertUser(ctx context.Context, d database.Database, r *http.Request, userID string) error {
 	var err error = nil
-	userName := ""
 
 	err = d.WithTx(ctx, func(q database.Querier) error {
 		if _, err = q.GetUser(ctx, userID); err != nil {
@@ -172,25 +180,8 @@ func (h *Handler) UpsertUser(ctx context.Context, d database.Database, r *http.R
 			}
 		}
 
-		perms, err = q.GetPermissions(ctx, userID)
-		if err != nil {
-			return err
-		}
-
-		userName, err = q.GetUserName(ctx, userID)
 		return err
 	})
-	if err != nil {
-		return nil, err
-	}
 
-	ua := useragent.Parse(r.UserAgent())
-	session := &config.SessionData{
-		UserID:   userID,
-		UserName: userName,
-		Agent:    ua.OS,
-		Perms:    perms,
-	}
-
-	return session, nil
+	return err
 }

@@ -3,11 +3,12 @@ package protected
 import (
 	"app/config"
 	"app/config/routes"
+	"app/database/models"
 	"app/templates/utils"
 	"strings"
 )
 
-templ ProtectedMain(tr func(string) string, session *config.SessionData, active string) {
+templ ProtectedMain(tr func(string) string, userMeta *models.UserMeta, session *config.SessionData, active string) {
 	<a href={ routes.Map[routes.Logout] }>
 		<button>
 			@utils.Logout()
@@ -40,7 +41,7 @@ templ ProtectedMain(tr func(string) string, session *config.SessionData, active 
 		case routes.Map[routes.Protected]:
 			@protected(tr, session)
 		case routes.Map[routes.ProtectedUser]:
-			@ProtectedUser(tr, session)
+			@ProtectedUser(tr, userMeta, session)
 	}
 }
 
@@ -49,10 +50,10 @@ templ protected(tr func(string) string, session *config.SessionData) {
 	<p>templates/protected/protected.templ</p>
 }
 
-templ ProtectedUser(tr func(string) string, session *config.SessionData) {
+templ ProtectedUser(tr func(string) string, userMeta *models.UserMeta, session *config.SessionData) {
 	<div id="onboarding">
-		if session.UserName != "" {
-			<h1>{ tr("welcome") } { session.UserName }!</h1>
+		if userMeta.Name != "" {
+			<h1>{ tr("welcome") } { userMeta.Name }!</h1>
 		} else {
 			<label>
 				<strong>{ tr("onboarding.input.name.label") }</strong>
@@ -67,6 +68,6 @@ templ ProtectedUser(tr func(string) string, session *config.SessionData) {
 			@utils.BtnPost("onboarding-submit", routes.Map[routes.ProtectedUser], tr("onboarding.input.name.submit"))
 		}
 		<div><strong>{ tr("device") }</strong>: { session.Agent }</div>
-		<div><strong>{ tr("permissions") }</strong>: { strings.Join(session.Perms, ", ") }</div>
+		<div><strong>{ tr("permissions") }</strong>: { strings.Join(userMeta.Perms, ", ") }</div>
 	</div>
 }

@@ -26,7 +26,7 @@ type Querier interface {
 	SetUser(ctx context.Context, userID string) error
 	DelUser(ctx context.Context, id string) error
 	UpsertUserName(ctx context.Context, userName, userID string) error
-	GetUserName(ctx context.Context, userID string) (userName string, err error)
+	GetUserMeta(ctx context.Context, userID string) (meta *models.UserMeta, err error)
 
 	// Configs
 	GetConfigs(ctx context.Context) ([]models.Config, error)
