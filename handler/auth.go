@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"net/http"
-	"time"
 
 	providers "app/auth"
 	"app/config"
@@ -91,12 +90,9 @@ func (h *Handler) loginWithProvider(provider providers.UserIDProvider, w http.Re
 	}
 
 	ua := useragent.Parse(r.UserAgent())
-	now := time.Now().Unix()
 	session := &config.SessionData{
-		UserID:   userID,
-		Agent:    ua.OS,
-		Created:  now,
-		LastUsed: now,
+		UserID: userID,
+		Agent:  ua.OS,
 	}
 
 	if err := h.Sess().Set(ctx, w, userID, session); err != nil {
