@@ -21,7 +21,7 @@ func Init(h *handler.Handler, fs embed.FS) http.Handler {
 	// templ generate --notify-proxy requires the html response to inject
 	// the hot-reload script in development.
 	if config.Config.App.LogLevel < "0" {
-		globalMiddleware = middleware.Stack(middleware.ContentLength, h.LogRequest)
+		globalMiddleware = middleware.Stack(middleware.Delay, h.LogRequest, middleware.ContentLength)
 	} else {
 		globalMiddleware = middleware.Stack(middleware.Gzip)
 	}
