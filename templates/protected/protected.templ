@@ -6,9 +6,11 @@ import (
 	"app/database/models"
 	"app/templates/utils"
 	"strings"
+	"time"
 )
 
 templ ProtectedMain(tr func(string) string, userMeta *models.UserMeta, session *config.SessionData, active string) {
+	{ tr("session.last_used") }: { time.Unix(session.LastUsed, 0).Format(time.RFC3339) }
 	<a href={ routes.Map[routes.Logout] }>
 		<button>
 			@utils.Logout()
