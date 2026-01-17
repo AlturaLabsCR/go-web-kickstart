@@ -12,55 +12,24 @@ import (
 
 func protectedEndpoints(h *handler.Handler) []endpoint {
 	return []endpoint{
-		{
-			method:  http.MethodGet,
-			path:    routes.Map[routes.Logout],
-			handler: wrap(h.Validate, h.Logout),
-		},
-		{
-			method:  http.MethodGet,
-			path:    routes.Map[routes.Protected],
-			handler: wrap(h.Validate, h.ProtectedPage),
-		},
-		{
-			method:  http.MethodGet,
-			path:    routes.Map[routes.ProtectedUser],
-			handler: wrap(h.Validate, h.ProtectedPage),
-		},
-		{
-			method:  http.MethodPost,
-			path:    routes.Map[routes.ProtectedUser],
-			handler: wrap(h.Validate, h.ProtectedUpdateUser),
-		},
+		{http.MethodGet, routes.Map[routes.Logout], wrap(h.Validate, h.Logout)},
+		{http.MethodGet, routes.Map[routes.Protected], wrap(h.Validate, h.ProtectedPage)},
+		{http.MethodGet, routes.Map[routes.ProtectedUser], wrap(h.Validate, h.ProtectedPage)},
+		{http.MethodPost, routes.Map[routes.ProtectedUser], wrap(h.Validate, h.ProtectedUpdateUser)},
+		{http.MethodGet, routes.Map[routes.ProtectedAdmin], wrap(h.Validate, h.ProtectedAdmin)},
 	}
 }
 
 func publicEndpoints(h *handler.Handler) []endpoint {
 	return []endpoint{
+		{http.MethodGet, routes.Map[routes.Login], h.LoginPage},
+		{http.MethodGet, routes.Map[routes.About], h.AboutPage},
+		{http.MethodPost, routes.Map[routes.GoogleAuth], h.LoginWithGoogle},
+		{http.MethodGet, routes.Map[routes.FacebookAuth], h.LoginWithFacebook},
 		{
-			method:  http.MethodGet,
-			path:    routes.Map[routes.Login],
-			handler: h.LoginPage,
-		},
-		{
-			method:  http.MethodGet,
-			path:    routes.Map[routes.About],
-			handler: h.AboutPage,
-		},
-		{
-			method:  http.MethodPost,
-			path:    routes.Map[routes.GoogleAuth],
-			handler: h.LoginWithGoogle,
-		},
-		{
-			method:  http.MethodGet,
-			path:    routes.Map[routes.FacebookAuth],
-			handler: h.LoginWithFacebook,
-		},
-		{
-			method: http.MethodGet,
-			path:   routes.Map[routes.Root],
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			http.MethodGet,
+			routes.Map[routes.Root],
+			func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path != routes.Map[routes.Root] {
 					http.Redirect(w, r, routes.Map[routes.Root], http.StatusFound)
 					return

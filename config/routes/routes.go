@@ -14,18 +14,20 @@ const (
 	Logout
 	Protected
 	ProtectedUser
+	ProtectedAdmin
 )
 
 var Map = map[Route]string{
-	Root:          "/",
-	Assets:        "/assets/",
-	Login:         "/login",
-	About:         "/about",
-	GoogleAuth:    "/auth/google",
-	FacebookAuth:  "/auth/facebook",
-	Logout:        "/logout",
-	Protected:     "/protected",
-	ProtectedUser: "/protected/user",
+	Root:           "/",
+	Assets:         "/assets/",
+	Login:          "/login",
+	About:          "/about",
+	GoogleAuth:     "/auth/google",
+	FacebookAuth:   "/auth/facebook",
+	Logout:         "/logout",
+	Protected:      "/protected",
+	ProtectedUser:  "/protected/user",
+	ProtectedAdmin: "/protected/admin",
 }
 
 func PrefixEndpoints(prefix string) {

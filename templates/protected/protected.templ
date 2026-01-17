@@ -44,6 +44,17 @@ templ ProtectedMain(tr func(string) string, params ProtectedParams, active strin
 					}
 				>{ tr("protected.user") }</a>
 			</li>
+			if models.HasPermission(params.User.Perms, "perm.manage_users") {
+				<li>
+					<a
+						if active == routes.Map[routes.ProtectedAdmin] {
+							class="active"
+						} else {
+							href={ routes.Map[routes.ProtectedAdmin] }
+						}
+					>{ tr("protected.admin") }</a>
+				</li>
+			}
 		</ul>
 	</nav>
 	switch active {
@@ -51,6 +62,8 @@ templ ProtectedMain(tr func(string) string, params ProtectedParams, active strin
 			@protected(tr)
 		case routes.Map[routes.ProtectedUser]:
 			@ProtectedUser(tr, params)
+		case routes.Map[routes.ProtectedAdmin]:
+			@ProtectedAdmin(tr, params)
 	}
 }
 
@@ -81,4 +94,9 @@ templ ProtectedUser(tr func(string) string, params ProtectedParams) {
 		<div><strong>{ tr("device") }</strong>: { params.Data.Agent }</div>
 		<div><strong>{ tr("permissions") }</strong>: { strings.Join(params.User.Perms, ", ") }</div>
 	</div>
+}
+
+templ ProtectedAdmin(tr func(string) string, params ProtectedParams) {
+	<h1>Manage users</h1>
+	<p>templates/protected/protected.templ</p>
 }
