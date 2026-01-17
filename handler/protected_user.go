@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"app/database/models"
 	"app/templates/protected"
 )
 
@@ -22,6 +23,19 @@ func (h *Handler) ProtectedUpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, err := h.DB().Querier().GetUserMeta(ctx, sessionData.UserID)
+	if err != nil {
+		h.Log().Error("error getting user meta", "error", err)
+		http.Error(w, "error getting user meta", http.StatusBadRequest)
+		return
+	}
+
+	if !models.HasPermission(user.Perms, "perm.change_name") {
+		h.Log().Error("doesnt have permission to change name")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	var payload struct {
 		UserName string `json:"onboarding-input-name"`
 	}
@@ -33,7 +47,7 @@ func (h *Handler) ProtectedUpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.UserName == "" {
-		h.Log().Debug("invalid username", "body", "r.Body")
+		h.Log().Debug("invalid username", "body", r.Body)
 		http.Error(w, "invalid username", http.StatusBadRequest)
 		return
 	}

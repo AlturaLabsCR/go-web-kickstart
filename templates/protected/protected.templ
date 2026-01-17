@@ -17,7 +17,7 @@ type ProtectedParams struct {
 }
 
 templ ProtectedMain(tr func(string) string, params ProtectedParams, active string) {
-	{ tr("session.last_used") }: { time.Unix(params.Attrs.LastUsedAt, 0).Format(time.RFC3339) }
+	<p>{ tr("session.last_used") }: { time.Unix(params.Attrs.LastUsedAt, 0).Format(time.RFC3339) }</p>
 	<a href={ routes.Map[routes.Logout] }>
 		<button>
 			@utils.Logout()
@@ -61,20 +61,22 @@ templ protected(tr func(string) string) {
 
 templ ProtectedUser(tr func(string) string, params ProtectedParams) {
 	<div id="onboarding">
-		if params.User.Name != "" {
-			<h1>{ tr("welcome") } { params.User.Name }!</h1>
+		if name := params.User.Name; name != "" {
+			<h1>{ tr("welcome") } { name }!</h1>
 		} else {
-			<label>
-				<strong>{ tr("onboarding.input.name.label") }</strong>
-				<p>
-					{ tr("onboarding.input.name.description") }
-				</p>
-				<input
-					data-bind="onboarding-input-name"
-					placeholder={ tr("onboarding.input.name.placeholder") }
-				/>
-			</label>
-			@utils.BtnPost("onboarding-submit", routes.Map[routes.ProtectedUser], tr("onboarding.input.name.submit"))
+			if models.HasPermission(params.User.Perms, "perm.change_name") {
+				<label>
+					<strong>{ tr("onboarding.input.name.label") }</strong>
+					<p>
+						{ tr("onboarding.input.name.description") }
+					</p>
+					<input
+						data-bind="onboarding-input-name"
+						placeholder={ tr("onboarding.input.name.placeholder") }
+					/>
+				</label>
+				@utils.BtnPost("onboarding-submit", routes.Map[routes.ProtectedUser], tr("onboarding.input.name.submit"))
+			}
 		}
 		<div><strong>{ tr("device") }</strong>: { params.Data.Agent }</div>
 		<div><strong>{ tr("permissions") }</strong>: { strings.Join(params.User.Perms, ", ") }</div>
