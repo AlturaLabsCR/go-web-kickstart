@@ -4,13 +4,20 @@ import (
 	"app/config"
 	"app/config/routes"
 	"app/database/models"
+	"app/sessions"
 	"app/templates/utils"
 	"strings"
 	"time"
 )
 
-templ ProtectedMain(tr func(string) string, userMeta *models.UserMeta, session *config.SessionData, active string) {
-	{ tr("session.last_used") }: { time.Unix(session.LastUsed, 0).Format(time.RFC3339) }
+type ProtectedParams struct {
+	User  *models.UserMeta
+	Attrs *sessions.Session
+	Data  *config.SessionData
+}
+
+templ ProtectedMain(tr func(string) string, params ProtectedParams, active string) {
+	{ tr("session.last_used") }: { time.Unix(params.Attrs.LastUsedAt, 0).Format(time.RFC3339) }
 	<a href={ routes.Map[routes.Logout] }>
 		<button>
 			@utils.Logout()
@@ -41,21 +48,21 @@ templ ProtectedMain(tr func(string) string, userMeta *models.UserMeta, session *
 	</nav>
 	switch active {
 		case routes.Map[routes.Protected]:
-			@protected(tr, session)
+			@protected(tr)
 		case routes.Map[routes.ProtectedUser]:
-			@ProtectedUser(tr, userMeta, session)
+			@ProtectedUser(tr, params)
 	}
 }
 
-templ protected(tr func(string) string, session *config.SessionData) {
+templ protected(tr func(string) string) {
 	<h1>Protected view</h1>
 	<p>templates/protected/protected.templ</p>
 }
 
-templ ProtectedUser(tr func(string) string, userMeta *models.UserMeta, session *config.SessionData) {
+templ ProtectedUser(tr func(string) string, params ProtectedParams) {
 	<div id="onboarding">
-		if userMeta.Name != "" {
-			<h1>{ tr("welcome") } { userMeta.Name }!</h1>
+		if params.User.Name != "" {
+			<h1>{ tr("welcome") } { params.User.Name }!</h1>
 		} else {
 			<label>
 				<strong>{ tr("onboarding.input.name.label") }</strong>
@@ -69,7 +76,7 @@ templ ProtectedUser(tr func(string) string, userMeta *models.UserMeta, session *
 			</label>
 			@utils.BtnPost("onboarding-submit", routes.Map[routes.ProtectedUser], tr("onboarding.input.name.submit"))
 		}
-		<div><strong>{ tr("device") }</strong>: { session.Agent }</div>
-		<div><strong>{ tr("permissions") }</strong>: { strings.Join(userMeta.Perms, ", ") }</div>
+		<div><strong>{ tr("device") }</strong>: { params.Data.Agent }</div>
+		<div><strong>{ tr("permissions") }</strong>: { strings.Join(params.User.Perms, ", ") }</div>
 	</div>
 }

@@ -18,6 +18,14 @@ const (
 	ErrBadCache = errStr("invalid cache")
 )
 
+type sessionAttrsCtxKeyType struct{}
+
+var SessionAttrsCtxKey = sessionAttrsCtxKeyType{}
+
+type sessionDataCtxKeyType struct{}
+
+var SessionDataCtxKey = sessionDataCtxKeyType{}
+
 type Session struct {
 	SessionUser string
 	CSRFToken   string
@@ -92,19 +100,19 @@ func NewStore[T any](ctx context.Context, params StoreParams) (*Store[T], error)
 	return &Store[T]{params: params}, nil
 }
 
-func (s *Store[T]) Set(ctx context.Context, w http.ResponseWriter, sessionUser string, sessionData *T) error {
+func (s *Store[T]) Set(w http.ResponseWriter, r *http.Request, sessionUser string, sessionData *T) (*http.Request, error) {
 	sessionID, err := generateToken()
 	if err != nil {
-		return err
+		return r, err
 	}
 
 	if _, err := s.refreshAccessTokenCookie(w, sessionID, sessionData); err != nil {
-		return err
+		return r, err
 	}
 
 	csrfToken, err := s.refreshCSRFCookie(w)
 	if err != nil {
-		return err
+		return r, err
 	}
 
 	now := time.Now().Unix()
@@ -118,17 +126,28 @@ func (s *Store[T]) Set(ctx context.Context, w http.ResponseWriter, sessionUser s
 
 	sessionStr, err := sessionToString(session)
 	if err != nil {
-		return err
+		return r, err
 	}
+
+	ctx := r.Context()
 
 	_ = s.params.L2Cache.Set(ctx, s.params.NamespacePrefix+sessionID, sessionStr)
 
-	return s.params.Cache.Set(ctx, s.params.NamespacePrefix+sessionID, sessionStr)
+	if err := s.params.Cache.Set(
+		ctx,
+		s.params.NamespacePrefix+sessionID,
+		sessionStr,
+	); err != nil {
+		return r, err
+	}
+
+	ctx = context.WithValue(ctx, SessionAttrsCtxKey, session)
+	ctx = context.WithValue(ctx, SessionDataCtxKey, sessionData)
+
+	return r.WithContext(ctx), nil
 }
 
-func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (*T, error) {
-	ctx := r.Context()
-
+func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	cookie, err := r.Cookie(s.params.CookiePrefix + AccessTokenKey)
 	if err != nil {
 		return nil, err
@@ -138,6 +157,8 @@ func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (*T, error) 
 	if err != nil {
 		return nil, err
 	}
+
+	ctx := r.Context()
 
 	sessionStr, err := s.params.Cache.Get(ctx, s.params.NamespacePrefix+claims.SessionID)
 	if err != nil {
@@ -159,7 +180,10 @@ func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (*T, error) 
 		return nil, fmt.Errorf("failed to refresh session")
 	}
 
-	return &claims.SessionData, nil
+	ctx = context.WithValue(ctx, SessionAttrsCtxKey, session)
+	ctx = context.WithValue(ctx, SessionDataCtxKey, &claims.SessionData)
+
+	return ctx, nil
 }
 
 func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
@@ -198,4 +222,14 @@ func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return s.params.Cache.Del(r.Context(), s.params.NamespacePrefix+claims.SessionID)
+}
+
+func (s *Store[T]) Attrs(ctx context.Context) (*Session, bool) {
+	v, ok := ctx.Value(SessionAttrsCtxKey).(*Session)
+	return v, ok
+}
+
+func (s *Store[T]) Data(ctx context.Context) (*T, bool) {
+	v, ok := ctx.Value(SessionDataCtxKey).(*T)
+	return v, ok
 }

@@ -4,14 +4,19 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"app/config"
 	"app/templates/protected"
 )
 
 func (h *Handler) ProtectedUpdateUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	session, ok := r.Context().Value(SessionData).(*config.SessionData)
+	sessionData, ok := h.Sess().Data(ctx)
+	if !ok {
+		http.Error(w, "session not found", http.StatusUnauthorized)
+		return
+	}
+
+	sessionAttrs, ok := h.Sess().Attrs(ctx)
 	if !ok {
 		http.Error(w, "session not found", http.StatusUnauthorized)
 		return
@@ -35,35 +40,29 @@ func (h *Handler) ProtectedUpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.DB().Querier().UpsertUserName(ctx,
 		payload.UserName,
-		session.UserID,
+		sessionData.UserID,
 	); err != nil {
 		h.Log().Error("error setting username")
 		http.Error(w, "error setting username", http.StatusInternalServerError)
 		return
 	}
 
-	if err := h.Sess().Revoke(w, r); err != nil {
-		h.Log().Error("error revoking old session")
-		http.Error(w, "error revoking old session", http.StatusInternalServerError)
-		return
-	}
-
-	if err := h.Sess().Set(ctx, w, session.UserID, session); err != nil {
-		h.Log().Error("error setting new session data")
-		http.Error(w, "error setting new session data", http.StatusInternalServerError)
-		return
-	}
-
 	tr := h.Tr(r)
 
-	userMeta, err := h.DB().Querier().GetUserMeta(ctx, session.UserID)
+	userMeta, err := h.DB().Querier().GetUserMeta(ctx, sessionData.UserID)
 	if err != nil {
 		h.Log().Error("error getting user meta", "error", err)
 		http.Error(w, "error getting user meta", http.StatusInternalServerError)
 		return
 	}
 
-	if err := protected.ProtectedUser(tr, userMeta, session).Render(ctx, w); err != nil {
+	params := protected.ProtectedParams{
+		User:  userMeta,
+		Attrs: sessionAttrs,
+		Data:  sessionData,
+	}
+
+	if err := protected.ProtectedUser(tr, params).Render(ctx, w); err != nil {
 		h.Log().Error("error rendering template", "error", err)
 	}
 }

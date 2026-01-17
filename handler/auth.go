@@ -16,10 +16,6 @@ import (
 	"github.com/mileusna/useragent"
 )
 
-type SessionDataKey string
-
-const SessionData SessionDataKey = "session.data"
-
 func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 	if _, err := h.Sess().Validate(w, r); err == nil {
 		http.Redirect(w, r, routes.Map[routes.Protected], http.StatusSeeOther)
@@ -95,7 +91,7 @@ func (h *Handler) loginWithProvider(provider providers.UserIDProvider, w http.Re
 		Agent:  ua.OS,
 	}
 
-	if err := h.Sess().Set(ctx, w, userID, session); err != nil {
+	if _, err := h.Sess().Set(w, r, userID, session); err != nil {
 		h.Log().Error("error setting session", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -112,14 +108,12 @@ func (h *Handler) loginWithProvider(provider providers.UserIDProvider, w http.Re
 
 func (h *Handler) Validate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sessionData, err := h.Sess().Validate(w, r)
+		ctx, err := h.Sess().Validate(w, r)
 		if err != nil {
 			h.Log().Debug("failed validation, redirecting", "error", err)
 			http.Redirect(w, r, routes.Map[routes.Login], http.StatusSeeOther)
 			return
 		}
-
-		ctx := context.WithValue(r.Context(), SessionData, sessionData)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
