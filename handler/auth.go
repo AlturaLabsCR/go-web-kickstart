@@ -156,6 +156,7 @@ func (h *Handler) UpsertUser(ctx context.Context, d database.Database, r *http.R
 
 	err = d.WithTx(ctx, func(q database.Querier) error {
 		if _, err = q.GetUser(ctx, userID); err != nil {
+
 			if err := q.SetUser(ctx, userID); err != nil {
 				return err
 			}
@@ -180,7 +181,7 @@ func (h *Handler) UpsertUser(ctx context.Context, d database.Database, r *http.R
 			}
 		}
 
-		return err
+		return nil
 	})
 
 	return err
