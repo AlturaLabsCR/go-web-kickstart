@@ -55,7 +55,8 @@ Visit [localhost:8080](http://localhost:8080)
 
 ## Roadmap
 
-- [ ] Logout button
-- [ ] Light user management
+- [X] Logout button
+- [X] Light user management
+- [ ] SessionData is supposed to identify the login EVENT, meaning: when the session started, the device from which it originated, MAYBE last login, not stuff like permissions and username, those should be queried on every request.
 - [ ] Sidebar layout in protected view
 - [ ] Tests
