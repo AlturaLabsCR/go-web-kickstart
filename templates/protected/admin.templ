@@ -35,7 +35,11 @@ templ ProtectedAllUsers(tr func(string) string, allUsers []models.UserMeta, curr
 							<span>{ strings.Join(u.Perms, ", ") }</span>
 						</td>
 						<td>
-							@utils.BtnDelete("admin-users-delete", routes.Map[routes.ProtectedUser]+u.ID, tr("delete"), "disabled")
+							if u.ID == currentUserID {
+								@utils.BtnDelete("admin-users-delete", routes.Map[routes.ProtectedUser]+u.ID, tr("delete"), "disabled")
+							} else {
+								@utils.BtnDelete("admin-users-delete", routes.Map[routes.ProtectedUser]+u.ID, tr("delete"))
+							}
 						</td>
 					</tr>
 				}
