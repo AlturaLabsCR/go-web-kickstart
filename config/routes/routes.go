@@ -11,17 +11,21 @@ const (
 	GoogleAuth
 	FacebookAuth
 
+	Logout
 	Protected
+	ProtectedUser
 )
 
 var Map = map[Route]string{
-	Root:         "/",
-	Assets:       "/assets/",
-	Login:        "/login",
-	About:        "/about",
-	GoogleAuth:   "/auth/google",
-	FacebookAuth: "/auth/facebook",
-	Protected:    "/protected",
+	Root:          "/",
+	Assets:        "/assets/",
+	Login:         "/login",
+	About:         "/about",
+	GoogleAuth:    "/auth/google",
+	FacebookAuth:  "/auth/facebook",
+	Logout:        "/logout",
+	Protected:     "/protected",
+	ProtectedUser: "/protected/user",
 }
 
 func PrefixEndpoints(prefix string) {

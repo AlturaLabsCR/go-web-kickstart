@@ -14,8 +14,23 @@ func protectedEndpoints(h *handler.Handler) []endpoint {
 	return []endpoint{
 		{
 			method:  http.MethodGet,
+			path:    routes.Map[routes.Logout],
+			handler: wrap(h.Validate, h.Logout),
+		},
+		{
+			method:  http.MethodGet,
 			path:    routes.Map[routes.Protected],
-			handler: wrap(h.ProtectedPage, h.Validate),
+			handler: wrap(h.Validate, h.ProtectedPage),
+		},
+		{
+			method:  http.MethodGet,
+			path:    routes.Map[routes.ProtectedUser],
+			handler: wrap(h.Validate, h.ProtectedPage),
+		},
+		{
+			method:  http.MethodPost,
+			path:    routes.Map[routes.ProtectedUser],
+			handler: wrap(h.Validate, h.ProtectedUpdateUser),
 		},
 	}
 }
@@ -82,7 +97,7 @@ func assetsEndpoints(fs embed.FS) []endpoint {
 	}
 }
 
-func wrap(h http.HandlerFunc, m middleware.Middleware) http.HandlerFunc {
+func wrap(m middleware.Middleware, h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		m(http.HandlerFunc(h)).ServeHTTP(w, r)
 	}

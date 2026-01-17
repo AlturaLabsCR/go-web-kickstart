@@ -1,9 +1,10 @@
 package utils
 
 import "strings"
+import "app/sessions"
 
 var defaultOpts = `{
-  headers: {"X-CSRF-Token": document.cookie.split('; ').find(r => r.startsWith('csrf='))?.split('=')[1]},
+  headers: {'` + sessions.CSRFHeaderKey + `': document.cookie.split('; ').find(c => c.includes('` + sessions.CSRFTokenKey + `='))?.split('` + sessions.CSRFTokenKey + `=')[1] || ''},
   openWhenHidden: true,
 }`
 

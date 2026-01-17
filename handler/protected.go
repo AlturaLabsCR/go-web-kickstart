@@ -20,7 +20,7 @@ func (h *Handler) ProtectedPage(w http.ResponseWriter, r *http.Request) {
 
 	tr := h.Tr(r)
 
-	main := protected.ProtectedMain(tr, session, routes.Map[routes.Protected])
+	main := protected.ProtectedMain(tr, session, r.URL.Path)
 
 	params := base.HeadParams{
 		Subtitle:    tr("nav.account"),

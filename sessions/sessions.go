@@ -151,7 +151,7 @@ func (s *Store[T]) Validate(w http.ResponseWriter, r *http.Request) (*T, error) 
 
 	if r.Method != http.MethodGet && r.Method != http.MethodOptions {
 		if t := r.Header.Get(CSRFHeaderKey); t != session.CSRFToken {
-			return nil, fmt.Errorf("invalid CSRF token")
+			return nil, fmt.Errorf("invalid CSRF token: expected %s, got %s", session.CSRFToken, t)
 		}
 	}
 

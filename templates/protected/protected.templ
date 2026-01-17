@@ -1,54 +1,72 @@
 package protected
 
-import "app/config"
-import "app/config/routes"
-import "strings"
-import "app/templates/utils"
+import (
+	"app/config"
+	"app/config/routes"
+	"app/templates/utils"
+	"strings"
+)
 
 templ ProtectedMain(tr func(string) string, session *config.SessionData, active string) {
-	<nav class="bg-black/5 dark:bg-white/5 py-2 px-5 rounded-lg flex flex-nowrap! justify-between">
-		<ul class="translate-y-1">
+	<a href={ routes.Map[routes.Logout] }>
+		<button>
+			@utils.Logout()
+			Logout
+		</button>
+	</a>
+	<nav>
+		<ul>
 			<li>
 				<a
 					if active == routes.Map[routes.Protected] {
 						class="active"
 					} else {
-						href="#"
+						href={ routes.Map[routes.Protected] }
 					}
-				>{ tr("protected.user") }</a>
+				>{ tr("protected.example") }</a>
 			</li>
 			<li>
 				<a
-					if active == routes.Map[routes.Protected] {
+					if active == routes.Map[routes.ProtectedUser] {
 						class="active"
 					} else {
-						href="#"
+						href={ routes.Map[routes.ProtectedUser] }
 					}
 				>{ tr("protected.user") }</a>
 			</li>
 		</ul>
-		<button class="max-w-fit">
-			@utils.Logout()
-		</button>
 	</nav>
 	switch active {
 		case routes.Map[routes.Protected]:
-			@User(tr, session)
+			@protected(tr, session)
+		case routes.Map[routes.ProtectedUser]:
+			@ProtectedUser(tr, session)
 	}
 }
 
-templ User(tr func(string) string, session *config.SessionData) {
-	<div class="rounded-lg border border-black/20 dark:border-white/10 shadow-lg p-4 my-4">
-		if session.UserName == "" {
-			<h1>{ tr("welcome") } { session.UserName }!</h1>
-		}
-		<small>
-			<div>{ tr("device") }: { session.Agent }</div>
-			<div>{ tr("permissions") }: { permsToStr(session.Perms) }</div>
-		</small>
-	</div>
+templ protected(tr func(string) string, session *config.SessionData) {
+	<h1>Protected view</h1>
+	<p>templates/protected/protected.templ</p>
 }
 
-func permsToStr(perms []string) string {
-	return strings.Join(perms, ", ")
+templ ProtectedUser(tr func(string) string, session *config.SessionData) {
+	<div id="onboarding">
+		if session.UserName != "" {
+			<h1>{ tr("welcome") } { session.UserName }!</h1>
+		} else {
+			<label>
+				<strong>{ tr("onboarding.input.name.label") }</strong>
+				<p>
+					{ tr("onboarding.input.name.description") }
+				</p>
+				<input
+					data-bind="onboarding-input-name"
+					placeholder={ tr("onboarding.input.name.placeholder") }
+				/>
+			</label>
+			@utils.BtnPost("onboarding-submit", routes.Map[routes.ProtectedUser], tr("onboarding.input.name.submit"))
+		}
+		<div><strong>{ tr("device") }</strong>: { session.Agent }</div>
+		<div><strong>{ tr("permissions") }</strong>: { strings.Join(session.Perms, ", ") }</div>
+	</div>
 }

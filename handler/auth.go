@@ -8,6 +8,7 @@ import (
 	"app/config"
 	"app/config/routes"
 	"app/database"
+	"app/database/models"
 	"app/i18n"
 	"app/templates/auth"
 	"app/templates/base"
@@ -81,21 +82,14 @@ func (h *Handler) loginWithProvider(provider providers.UserIDProvider, w http.Re
 	}
 
 	ctx := r.Context()
-	perms, err := database.UpsertUser(ctx, h.DB(), userID)
+	session, err := h.UpsertUser(ctx, h.DB(), r, userID)
 	if err != nil {
 		h.Log().Error("error upserting user", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	ua := useragent.Parse(r.UserAgent())
-	sessionData := &config.SessionData{
-		UserID: userID,
-		Agent:  ua.OS,
-		Perms:  perms,
-	}
-
-	if err := h.Sess().Set(ctx, w, userID, sessionData); err != nil {
+	if err := h.Sess().Set(ctx, w, userID, session); err != nil {
 		h.Log().Error("error setting session", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -104,7 +98,7 @@ func (h *Handler) loginWithProvider(provider providers.UserIDProvider, w http.Re
 	h.Log().Debug(
 		"logged user in",
 		"userID", userID,
-		"sessionData", sessionData,
+		"sessionData", session,
 	)
 
 	http.Redirect(w, r, routes.Map[routes.Protected], http.StatusSeeOther)
@@ -114,6 +108,7 @@ func (h *Handler) Validate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sessionData, err := h.Sess().Validate(w, r)
 		if err != nil {
+			h.Log().Debug("failed validation, redirecting", "error", err)
 			http.Redirect(w, r, routes.Map[routes.Login], http.StatusSeeOther)
 			return
 		}
@@ -144,4 +139,58 @@ func (h *Handler) LoginWithGoogle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.loginWithProvider(provider, w, r)
+}
+
+func (h *Handler) UpsertUser(ctx context.Context, d database.Database, r *http.Request, userID string) (*config.SessionData, error) {
+	perms := []string{}
+	var err error = nil
+	userName := ""
+
+	err = d.WithTx(ctx, func(q database.Querier) error {
+		if _, err = q.GetUser(ctx, userID); err != nil {
+			if err := q.SetUser(ctx, userID); err != nil {
+				return err
+			}
+
+			initialized, err := q.GetConfig(ctx, models.ConfigInitialized)
+			if err != nil {
+				return err
+			}
+
+			if initialized == models.ConfigInitializedTrue {
+				if err := q.SetRole(ctx, userID, "role.default"); err != nil {
+					return err
+				}
+			} else {
+				if err := q.SetRole(ctx, userID, "role.admin"); err != nil {
+					return err
+				}
+
+				if err := q.SetConfig(ctx, models.ConfigInitialized, models.ConfigInitializedTrue); err != nil {
+					return err
+				}
+			}
+		}
+
+		perms, err = q.GetPermissions(ctx, userID)
+		if err != nil {
+			return err
+		}
+
+		userName, err = q.GetUserName(ctx, userID)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	ua := useragent.Parse(r.UserAgent())
+	session := &config.SessionData{
+		UserID:   userID,
+		UserName: userName,
+		Agent:    ua.OS,
+		Perms:    perms,
+	}
+
+	return session, nil
 }
