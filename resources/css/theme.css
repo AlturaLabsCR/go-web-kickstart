@@ -1,41 +1,7 @@
 :root {
-  --theme-color-primary: #1e97bc;
-  --theme-color-separator: #b7b7b7;
-  --theme-color-fg: #2e2d2d;
-  --theme-color-fg-secondary: #606060;
-  --theme-color-bg: #f9f7f6;
-  --theme-color-bg-secondary: #f2f2f2;
-  --theme-color-bg-contrast: #fff;
-
-  --theme-color-bg-tip: #f0f9e8;
-  --theme-color-border-tip: #6ecf66;
-  --theme-color-bg-imp: #f3e8ff;
-  --theme-color-border-imp: #a56cff;
-  --theme-color-bg-warn: #fff7e6;
-  --theme-color-border-warn: #ffd966;
-  --theme-color-bg-caut: #fff0f0;
-  --theme-color-border-caut: #ff7f7f;
-
-  --theme-color-button: #0172ad;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --theme-color-primary: #26c2f2;
-    --theme-color-separator: #4c4c4c;
-    --theme-color-fg: #c4c4c5;
-    --theme-color-fg-secondary: #8e8e8e;
-    --theme-color-bg: #1d1e20;
-    --theme-color-bg-secondary: #252628;
-    --theme-color-bg-contrast: #101011;
-
-    --theme-color-bg-tip: #1b3320;
-    --theme-color-border-tip: #66ff66;
-    --theme-color-bg-imp: #3a1f5b;
-    --theme-color-border-imp: #b77fff;
-    --theme-color-bg-warn: #4a4200;
-    --theme-color-border-warn: #ffcc33;
-    --theme-color-bg-caut: #4f0f0f;
-    --theme-color-border-caut: #ff4d4d;
   }
 }
