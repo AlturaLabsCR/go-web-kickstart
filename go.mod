@@ -14,7 +14,7 @@ require (
 	github.com/mileusna/useragent v1.3.5
 	github.com/redis/go-redis/v9 v9.17.2
 	google.golang.org/api v0.260.0
-	modernc.org/sqlite v1.44.1
+	modernc.org/sqlite v1.44.2
 )
 
 require (
