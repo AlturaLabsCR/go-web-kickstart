@@ -153,6 +153,26 @@ live/sync_assets: assets
 live: gen
 	@$(MAKE) -j live/sql live/templ live/server live/esbuild live/sync_assets live/tailwind
 
+# Default for migrations
+APP_DB_CONNSTR ?= data/db.sqlite
+MIGRATIONS_FOLDER := database/sqlite/migrations
+
+# If postgres
+ifeq ($(filter postgres%,$(APP_DB_CONNSTR)),postgres)
+	MIGRATIONS_FOLDER := database/postgres/migrations
+	DB_CONNSTR := $(APP_DB_CONNSTR)
+else
+	# sqlite: APP_DB_CONNSTR is a file path
+	SQLITE_DB_PATH := $(APP_DB_CONNSTR)
+	SQLITE_DB_DIR  := $(dir $(SQLITE_DB_PATH))
+	DB_CONNSTR := sqlite://$(SQLITE_DB_PATH)
+endif
+
+.PHONY: migrate
+migrate:
+	@if [ -n "$(SQLITE_DB_DIR)" ]; then mkdir -p "$(SQLITE_DB_DIR)"; fi
+	@migrate -source file://$(MIGRATIONS_FOLDER) -database $(DB_CONNSTR) up
+
 $(DIST_FOLDER)/$(BIN)-x86_64-linux: $(GEN)
 	@mkdir -p $(DIST_FOLDER)
 	$(GO_ENV) GOARCH=amd64 GOOS=linux $(GO) build $(BUILD_FLAGS) -o $@
