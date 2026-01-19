@@ -10,11 +10,11 @@ input:not([type="checkbox"], [type="radio"]), button, select {
   bg-(--bg-inp)
   m-2
   py-2.5
-  px-4
+  px-3
   text-lg
   border
   border-(--fg-sep)
-  rounded-lg
+  rounded-md
 }
 
 label:has(input:disabled) {
@@ -40,6 +40,7 @@ button {
 }
 
 input:is([type="checkbox"], [type="radio"]) {
+  background-color: var(--bg-inp);
   @apply
   scale-200
   m-4

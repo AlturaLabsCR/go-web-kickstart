@@ -3,7 +3,6 @@
   --fg: #000;
   --fg-h: #0f172b;
   --fg-sec: #364153;
-  --fg-sel: #004ca3;
   --fg-mut: #6a7282;
   --fg-sep: #e5e7eb;
 
@@ -15,5 +14,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --fg-pri: #339bea;
+    --fg: #f3f4f6;
+    --fg-h: #f1f5f9;
+    --fg-sec: #99a1af;
+    --fg-mut: #70757f;
+    --fg-sep: #262626;
+
+    --bg: #111111;
+    --bg-sec: #171717;
+    --bg-sel: #172229;
+    --bg-inp: #0c0c0c;
   }
 }

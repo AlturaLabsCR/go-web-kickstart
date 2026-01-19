@@ -49,7 +49,7 @@ aside a {
   &:hover {
     @apply
     cursor-pointer
-    text-(--fg)
+    text-(--fg-sec)
   }
   &.active {
     @apply
