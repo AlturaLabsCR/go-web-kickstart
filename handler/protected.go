@@ -38,13 +38,24 @@ func (h *Handler) ProtectedPage(w http.ResponseWriter, r *http.Request) {
 		Data:  sessionData,
 	}, r.URL.Path)
 
-	params := base.HeadParams{
+	head := base.HeadParams{
 		Subtitle:    tr("nav.account"),
 		LoadJS:      true,
 		RobotsIndex: false,
 	}
 
-	if err := base.Page(params, tr, main, routes.Map[routes.Protected]).Render(ctx, w); err != nil {
+	aside := protected.Aside(tr)
+
+	page := base.PageParams{
+		Head: head,
+		Body: base.BodyParams{
+			Content: main,
+			Aside:   aside,
+			Active:  routes.Map[routes.Protected],
+		},
+	}
+
+	if err := base.Page(tr, page).Render(ctx, w); err != nil {
 		h.Log().Error("error rendering template", "error", err)
 	}
 }

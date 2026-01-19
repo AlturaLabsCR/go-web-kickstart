@@ -17,13 +17,13 @@ templ AboutMain(tr func(string) string, lang string) {
 			</nav>
 			<h1>{ config.AppTitle }</h1>
 			<small>
-				@utils.TimerIcon()
+				@utils.ClockIcon("h-5")
 				7 min
 				•
-				@utils.UserIcon()
+				@utils.UserIcon("h-5")
 				John Doe
 				•
-				@utils.CalendarIcon()
+				@utils.CalendarIcon("h-5")
 				<time datetime={ utils.GetTime() }>{ utils.HumanReadableDate(lang) }</time>
 			</small>
 		</header>

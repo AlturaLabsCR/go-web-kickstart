@@ -52,14 +52,22 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 
 	main := auth.LoginMain(authParams)
 
-	params := base.HeadParams{
+	head := base.HeadParams{
 		LoadJS:      true,
 		RobotsIndex: true,
 	}
 
 	tr := h.Tr(r)
 
-	if err := base.Page(params, tr, main, routes.Map[routes.Login]).Render(ctx, w); err != nil {
+	page := base.PageParams{
+		Head: head,
+		Body: base.BodyParams{
+			Content: main,
+			Active:  routes.Map[routes.Login],
+		},
+	}
+
+	if err := base.Page(tr, page).Render(ctx, w); err != nil {
 		h.Log().Error("error rendering template", "error", err)
 	}
 }

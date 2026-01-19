@@ -23,7 +23,7 @@ templ ProtectedMain(tr func(string) string, params ProtectedParams, active strin
 	<p>{ tr("session.last_used") }: { time.Unix(params.Attrs.LastUsedAt, 0).Format(time.RFC3339) }</p>
 	<a href={ routes.Map[routes.Logout] }>
 		<button>
-			@utils.Logout()
+			@utils.LogoutIcon("h-5")
 			Logout
 		</button>
 	</a>
@@ -73,4 +73,29 @@ templ ProtectedMain(tr func(string) string, params ProtectedParams, active strin
 templ protected(tr func(string) string) {
 	<h1>Protected view</h1>
 	<p>templates/protected/protected.templ</p>
+}
+
+templ Aside(tr func(string) string) {
+	<aside>
+		<ul>
+			<li>
+				<a>
+					@utils.ClockIcon("h-6")
+					{ tr("dashboard") }
+				</a>
+			</li>
+			<li>
+				<a>
+					@utils.CalendarIcon("h-6")
+					{ tr("calendar") }
+				</a>
+			</li>
+			<li>
+				<a>
+					@utils.LogoutIcon("h-6")
+					{ tr("logout") }
+				</a>
+			</li>
+		</ul>
+	</aside>
 }

@@ -4,19 +4,25 @@ import "app/config"
 import "app/templates/utils"
 import "app/config/routes"
 
-templ body(tr func(string) string, main templ.Component, active string) {
+type BodyParams struct {
+	Content templ.Component
+	Aside   templ.Component
+	Active  string
+}
+
+templ body(tr func(string) string, params BodyParams) {
 	<body>
 		<div class="hidden" id={ RedirectID }></div>
-		@h(tr, active)
-		@m(main)
+		@h(tr, params.Active)
+		@m(params.Content, params.Aside)
 		@f()
 	</body>
 }
 
 templ h(tr func(string) string, active string) {
 	<header>
+		<span>{ config.AppTitle }</span>
 		<nav>
-			<span>{ config.AppTitle }</span>
 			<ul>
 				<li>
 					<a
@@ -26,7 +32,7 @@ templ h(tr func(string) string, active string) {
 							href={ routes.Map[routes.Root] }
 						}
 					>
-						@utils.HomeIcon()
+						@utils.HomeIcon("h-5")
 						{ tr("nav.home") }
 					</a>
 				</li>
@@ -38,7 +44,7 @@ templ h(tr func(string) string, active string) {
 							href={ routes.Map[routes.Login] }
 						}
 					>
-						@utils.UserIcon()
+						@utils.UserIcon("h-5")
 						{ tr("nav.account") }
 					</a>
 				</li>
@@ -50,7 +56,7 @@ templ h(tr func(string) string, active string) {
 							href={ routes.Map[routes.About] }
 						}
 					>
-						@utils.InfoIcon()
+						@utils.InfoIcon("h-5")
 						{ tr("nav.about") }
 					</a>
 				</li>
@@ -59,9 +65,16 @@ templ h(tr func(string) string, active string) {
 	</header>
 }
 
-templ m(content templ.Component) {
+templ m(content, aside templ.Component) {
 	<main>
-		@content
+		if aside != nil {
+			<aside>
+				@aside
+			</aside>
+		}
+		<div class="content">
+			@content
+		</div>
 	</main>
 }
 

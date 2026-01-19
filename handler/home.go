@@ -15,14 +15,22 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 
 	main := templates.HomeMain()
 
-	params := base.HeadParams{
+	head := base.HeadParams{
 		LoadJS:      false,
 		RobotsIndex: true,
 	}
 
+	page := base.PageParams{
+		Head: head,
+		Body: base.BodyParams{
+			Content: main,
+			Active:  routes.Map[routes.Root],
+		},
+	}
+
 	tr := h.Tr(r)
 
-	if err := base.Page(params, tr, main, routes.Map[routes.Root]).Render(ctx, w); err != nil {
+	if err := base.Page(tr, page).Render(ctx, w); err != nil {
 		h.Log().Error("error rendering template", "error", err)
 	}
 }
@@ -47,13 +55,21 @@ func (h *Handler) AboutPage(w http.ResponseWriter, r *http.Request) {
 
 	main := templates.AboutMain(tr, locale)
 
-	params := base.HeadParams{
+	head := base.HeadParams{
 		Subtitle:    tr("nav.about"),
 		LoadJS:      false,
 		RobotsIndex: true,
 	}
 
-	if err := base.Page(params, tr, main, routes.Map[routes.About]).Render(ctx, w); err != nil {
+	page := base.PageParams{
+		Head: head,
+		Body: base.BodyParams{
+			Content: main,
+			Active:  routes.Map[routes.About],
+		},
+	}
+
+	if err := base.Page(tr, page).Render(ctx, w); err != nil {
 		h.Log().Error("error rendering template", "error", err)
 	}
 }
