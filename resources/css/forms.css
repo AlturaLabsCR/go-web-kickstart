@@ -1,31 +1,19 @@
-/*
 input:not([type="checkbox"], [type="radio"]), button, select {
-  &:disabled {
-    @apply
-    opacity-50
-    pointer-events-none
+  &:disabled, &.disabled {
+    @apply grayscale opacity-50 pointer-events-none
   }
-
-  &.disabled {
-    @apply
-    opacity-50
-    pointer-events-none
-  }
-
   &:focus {
-    @apply
-    outline-2
-    outline-(--c-pri)/30
+    @apply outline-2 outline-(--fg-pri)/30
   }
-
   @apply
-  bg-(--c-bg-sec)
-  my-2
+  w-full
+  bg-(--bg-inp)
+  m-2
   py-2.5
   px-4
   text-lg
   border
-  border-(--c-sep)
+  border-(--fg-sep)
   rounded-lg
 }
 
@@ -46,16 +34,16 @@ button {
   }
 
   @apply
-  bg-(--c-b)
-  border-(--c-b)
+  bg-(--fg-pri)
+  border-(--fg-pri)
+  text-white
 }
 
 input:is([type="checkbox"], [type="radio"]) {
   @apply
   scale-200
   m-4
-  accent-(--c-b)
+  accent-(--fg-pri)
   focus:ring-1
-  focus:ring-(--c-pri)/30
+  focus:ring-(--fg-pri)/30
 }
-*/

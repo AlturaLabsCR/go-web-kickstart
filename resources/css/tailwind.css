@@ -8,6 +8,8 @@
 @import "./body.css";
 @import "./text.css";
 
+@import "./forms.css";
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--theme-color-fg-secondary) transparent;
