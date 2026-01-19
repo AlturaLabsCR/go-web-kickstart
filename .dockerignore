@@ -25,9 +25,6 @@ tmp/
 # secrets
 .env
 
-# backup
-*.bak
-
 # git
 .git*
 
