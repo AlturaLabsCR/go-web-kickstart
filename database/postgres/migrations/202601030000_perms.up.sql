@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS permissions (
 
 INSERT INTO permissions (name, description) VALUES
   ('perm.manage_users', 'perm.manage_users.desc'),
-  ('perm.change_name', 'perm.change_name.desc')
+  ('perm.change_name', 'perm.change_name.desc'),
+  ('perm.admin', 'perm.admin.desc')
 ON CONFLICT (name) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS roles (
@@ -27,6 +28,7 @@ CREATE TABLE IF NOT EXISTS role_permissions (
 INSERT INTO role_permissions (role, permission) VALUES
   ('role.admin', 'perm.manage_users'),
   ('role.admin', 'perm.change_name'),
+  ('role.admin', 'perm.admin'),
   ('role.default', 'perm.change_name')
 ON CONFLICT (role, permission) DO NOTHING;
 

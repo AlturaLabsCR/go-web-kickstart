@@ -51,7 +51,8 @@ func (h *Handler) ProtectedAdmin(w http.ResponseWriter, r *http.Request) {
 		Attrs:    sessionAttrs,
 		Data:     sessionData,
 		AllUsers: allUsers,
-	}, r.URL.Path)
+		Active:   r.URL.Path,
+	})
 
 	head := base.HeadParams{
 		Subtitle:    tr("nav.account"),
@@ -59,7 +60,12 @@ func (h *Handler) ProtectedAdmin(w http.ResponseWriter, r *http.Request) {
 		RobotsIndex: false,
 	}
 
-	aside := protected.Aside(tr)
+	asideParams := protected.AsideParams{
+		Active:  r.URL.Path,
+		IsAdmin: models.HasPermission(userMeta.Perms, "perm.admin"),
+	}
+
+	aside := protected.Aside(tr, asideParams)
 
 	page := base.PageParams{
 		Head: head,

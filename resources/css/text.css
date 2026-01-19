@@ -1,0 +1,32 @@
+h1, h2, h3, h4, h5, h6,
+p,
+pre,
+img,
+table {
+  @apply mt-2 mb-4
+}
+
+h1, h2, h3, h4, h5, h6 {
+  @apply font-bold text-(--fg-h)
+}
+
+h1 { @apply text-3xl }
+h2 { @apply text-2xl }
+h3 { @apply text-xl }
+h4 { @apply text-lg }
+
+p {
+  @apply leading-7
+}
+
+pre, code:not(pre code) {
+  @apply rounded-lg px-2 py-0.5 bg-(--bg-inp)
+}
+
+pre {
+  @apply p-2
+}
+
+hr {
+  @apply text-(--fg-sep) my-2
+}

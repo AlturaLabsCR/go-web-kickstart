@@ -1,0 +1,88 @@
+body {
+  @apply
+  flex
+  flex-col
+  min-h-screen
+  bg-(--bg)
+  text-(--fg)
+}
+
+body > * {
+  @apply py-4 px-5
+}
+
+main {
+  @apply grow w-full max-w-3xl mx-auto
+}
+
+header {
+  @apply border-b border-b-(--fg-sep)
+}
+
+header > * {
+  @apply flex max-w-6xl mx-auto
+}
+
+footer {
+  @apply
+  flex
+  justify-center
+  text-sm
+  text-(--fg-sec)
+  bg-(--bg-sec)
+}
+
+*:has(> aside) {
+  @apply
+  grid
+  max-w-full
+  p-2
+  grid-cols-[3.5rem_minmax(0,1fr)]
+  md:grid-cols-[auto_minmax(0,1fr)]
+}
+
+*:has(> aside) > *:not(aside) {
+  @apply w-full py-4 px-3 max-w-3xl mx-auto
+}
+
+aside a {
+  &:hover {
+    @apply
+    cursor-pointer
+    text-(--fg)
+  }
+  &.active {
+    @apply
+    font-bold
+    bg-(--bg-sel)
+    text-(--fg-pri)
+  }
+  @apply
+  text-(--fg-mut)
+  p-2
+  rounded-lg
+  w-full
+}
+
+aside li a span {
+  @apply
+  hidden
+  md:block
+}
+
+aside {
+  @apply
+  flex
+  flex-col
+  justify-between
+  border-r
+  border-r-(--fg-sep)
+  my-4
+  pr-2
+  pl-0
+  items-center
+}
+
+aside ul {
+  @apply flex flex-col gap-2
+}

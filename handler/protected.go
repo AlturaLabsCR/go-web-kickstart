@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"app/config/routes"
+	"app/database/models"
 	"app/templates/base"
 	"app/templates/protected"
 )
@@ -33,10 +34,11 @@ func (h *Handler) ProtectedPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	main := protected.ProtectedMain(tr, protected.ProtectedParams{
-		User:  userMeta,
-		Attrs: sessionAttrs,
-		Data:  sessionData,
-	}, r.URL.Path)
+		User:   userMeta,
+		Attrs:  sessionAttrs,
+		Data:   sessionData,
+		Active: r.URL.Path,
+	})
 
 	head := base.HeadParams{
 		Subtitle:    tr("nav.account"),
@@ -44,7 +46,12 @@ func (h *Handler) ProtectedPage(w http.ResponseWriter, r *http.Request) {
 		RobotsIndex: false,
 	}
 
-	aside := protected.Aside(tr)
+	asideParams := protected.AsideParams{
+		Active:  r.URL.Path,
+		IsAdmin: models.HasPermission(userMeta.Perms, "perm.admin"),
+	}
+
+	aside := protected.Aside(tr, asideParams)
 
 	page := base.PageParams{
 		Head: head,

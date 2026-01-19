@@ -1,0 +1,33 @@
+nav ul {
+  @apply
+  flex
+  gap-3
+  overflow-x-scroll
+  relative
+  mask-[linear-gradient(to_right,black,black_calc(100%-4rem),transparent)]
+  pr-14
+  text-(--fg-mut)
+}
+
+nav li {
+  &:has(a.active) {
+    @apply
+    border-b-3
+    border-(--fg-pri)
+  }
+  @apply my-2.5
+}
+
+nav a {
+  &:hover {
+    @apply text-(--fg-sec) cursor-pointer
+  }
+  &.active {
+    @apply text-(--fg)
+  }
+}
+
+nav a {
+  @apply
+  relative
+}

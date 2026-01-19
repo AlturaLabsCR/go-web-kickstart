@@ -1,17 +1,16 @@
 :root {
---fg-pri: #006BE6;
---fg: #000;
---fg-h: #0f172b;
---fg-sec: #364153;
---fg-sel: #004ca3;
---fg-mut: #6a7282;
---fg-sep: #e5e7eb;
+  --fg-pri: #006BE6;
+  --fg: #000;
+  --fg-h: #0f172b;
+  --fg-sec: #364153;
+  --fg-sel: #004ca3;
+  --fg-mut: #6a7282;
+  --fg-sep: #e5e7eb;
 
---bg: #fff;
---bg-sec: #f3f4f6;
---bg-sel: #e0efff;
---bg-inp: #f0f0f0;
-
+  --bg: #fff;
+  --bg-sec: #f3f4f6;
+  --bg-sel: #e0efff;
+  --bg-inp: #f0f0f0;
 }
 
 @media (prefers-color-scheme: dark) {

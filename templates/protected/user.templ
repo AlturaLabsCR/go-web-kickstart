@@ -14,6 +14,7 @@ templ ProtectedUser(tr func(string) string, params ProtectedParams) {
 			<h1>{ tr("welcome") } { name }!</h1>
 		} else {
 			if models.HasPermission(params.User.Perms, "perm.change_name") {
+				<h1>{ tr("onboarding") }</h1>
 				<label>
 					<strong>{ tr("onboarding.input.name.label") }</strong>
 					<p>

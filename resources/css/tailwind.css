@@ -1,15 +1,12 @@
 @import "tailwindcss";
+
 @import "./theme.css";
 @import "./icons.css";
-@import "./body.css";
+
 @import "./nav.css";
-@import "./table.css";
-@import "./code.css";
-@import "./image.css";
-@import "./article.css";
-@import "./alert.css";
+
+@import "./body.css";
 @import "./text.css";
-@import "./forms.css";
 
 * {
   scrollbar-width: thin;
