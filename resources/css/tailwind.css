@@ -10,6 +10,8 @@
 
 @import "./forms.css";
 
+@import "./table.css";
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--theme-color-fg-secondary) transparent;

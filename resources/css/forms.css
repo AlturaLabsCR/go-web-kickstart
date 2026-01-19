@@ -8,9 +8,9 @@ input:not([type="checkbox"], [type="radio"]), button, select {
   @apply
   w-full
   bg-(--bg-inp)
-  m-2
   py-2.5
   px-3
+  my-2
   text-lg
   border
   border-(--fg-sep)

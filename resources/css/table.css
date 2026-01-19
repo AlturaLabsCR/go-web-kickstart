@@ -1,0 +1,28 @@
+table {
+  @apply w-full
+}
+
+thead, tfoot, tr {
+  @apply
+  border-(--fg-sep)
+}
+
+thead {
+  @apply
+  border-b-3
+}
+
+tfoot {
+  @apply
+  border-t-3
+}
+
+th, td {
+  @apply
+  py-1 px-4
+}
+
+tr {
+  @apply
+  border-t
+}
