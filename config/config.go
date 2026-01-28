@@ -44,6 +44,7 @@ type Database struct {
 }
 
 type App struct {
+	Env        string `env:"ENV"`
 	Port       string `env:"PORT"`
 	LogLevel   string `env:"LOG_LEVEL"`
 	RootPrefix string `env:"ROOT_PREFIX"`
