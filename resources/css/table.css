@@ -17,6 +17,10 @@ tfoot {
   border-t-3
 }
 
+th {
+  @apply sticky top-0 bg-(--bg)
+}
+
 th, td {
   @apply
   py-1 px-4

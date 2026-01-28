@@ -16,6 +16,12 @@ main {
 }
 
 header {
+  &:is(body > header) {
+    @apply
+    z-10
+    bg-(--bg)
+    sticky top-0
+  }
   @apply border-b border-b-(--fg-sep)
 }
 
@@ -53,7 +59,6 @@ aside a {
   }
   &.active {
     @apply
-    font-bold
     bg-(--bg-sel)
     text-(--fg-pri)
   }

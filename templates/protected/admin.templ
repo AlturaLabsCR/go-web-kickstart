@@ -14,7 +14,7 @@ templ protectedAdmin(tr func(string) string, params ProtectedParams) {
 }
 
 templ ProtectedAllUsers(tr func(string) string, allUsers []models.UserMeta, currentUserID string) {
-	<div id="admin-users">
+	<div id="admin-users" class="max-h-[60vh] overflow-auto">
 		<table>
 			<thead>
 				<th>{ tr("user.name") }</th>
