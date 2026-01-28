@@ -56,7 +56,7 @@ func (s *Store[T]) refreshAccessTokenCookie(w http.ResponseWriter, sessionID str
 		Expires:  time.Now().Add(s.params.SessionTTL),
 		Value:    accessToken,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   s.params.SecureCookie,
 	})
 
 	return accessToken, nil
@@ -75,7 +75,7 @@ func (s *Store[T]) refreshCSRFCookie(w http.ResponseWriter) (string, error) {
 		Expires:  time.Now().Add(s.params.SessionTTL),
 		Value:    csrfToken,
 		HttpOnly: false,
-		Secure:   true,
+		Secure:   s.params.SecureCookie,
 	})
 
 	return csrfToken, nil

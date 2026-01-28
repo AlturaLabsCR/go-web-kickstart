@@ -43,6 +43,7 @@ type StoreParams struct {
 	SessionTTL      time.Duration // defaults to time.Hour * 24 * 30 = 1m
 	CookieSameSite  http.SameSite // defaults tu http.SameSiteLaxMode
 	StoreSecret     string        // defaults to generated string
+	SecureCookie    bool          // defaults to false
 }
 
 type Store[T any] struct {
@@ -204,7 +205,7 @@ func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
 		Expires:  time.Time{},
 		Value:    "",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   s.params.SecureCookie,
 	})
 
 	http.SetCookie(w, &http.Cookie{
@@ -214,7 +215,7 @@ func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
 		Expires:  time.Time{},
 		Value:    "",
 		HttpOnly: false,
-		Secure:   true,
+		Secure:   s.params.SecureCookie,
 	})
 
 	if err := s.params.L2Cache.Del(r.Context(), s.params.NamespacePrefix+claims.SessionID); err != nil {
