@@ -16,6 +16,7 @@
 # Port = "8080"
 # LogLevel = "0"  # -4:Debug 0:Info (default) 4:Warn 8:Error
 # RootPrefix = "" # set if app requires example.com/prefix/, e.g. RootPrefix = "/prefix"
+# Env = "" # set to production when needed
 
 [Sessions]
 # Secret = "" # set to persist sessions, generated if empty (not persistent)
