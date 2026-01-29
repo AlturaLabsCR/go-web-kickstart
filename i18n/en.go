@@ -25,7 +25,8 @@ var EN = map[string]string{
 
 	"welcome":     "Welcome",
 	"device":      "Device",
-	"devices":     "Devices",
+	"sessions":    "Sessions",
+	"created_at":  "Created at",
 	"last_used":   "Last used",
 	"permissions": "Permissions",
 }

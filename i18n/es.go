@@ -25,7 +25,8 @@ var ES = map[string]string{
 
 	"welcome":     "Hola",
 	"device":      "Dispositivo",
-	"devices":     "Dispositivos",
+	"sessions":    "Sesiones",
+	"created_at":  "Creado",
 	"last_used":   "Última actividad",
 	"permissions": "Permisos",
 }
