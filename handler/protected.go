@@ -14,13 +14,15 @@ func (h *Handler) ProtectedPage(w http.ResponseWriter, r *http.Request) {
 
 	sessionData, ok := h.Sess().Data(ctx)
 	if !ok {
-		http.Error(w, "session not found", http.StatusUnauthorized)
+		h.Log().Error("session not found")
+		http.Redirect(w, r, routes.Map[routes.Login], http.StatusSeeOther)
 		return
 	}
 
 	sessionAttrs, ok := h.Sess().Attrs(ctx)
 	if !ok {
-		http.Error(w, "session not found", http.StatusUnauthorized)
+		h.Log().Error("session not found")
+		http.Redirect(w, r, routes.Map[routes.Login], http.StatusSeeOther)
 		return
 	}
 
@@ -29,7 +31,7 @@ func (h *Handler) ProtectedPage(w http.ResponseWriter, r *http.Request) {
 	userMeta, err := h.DB().Querier().GetUserMeta(ctx, sessionData.UserID)
 	if err != nil {
 		h.Log().Error("error getting user meta", "error", err)
-		http.Error(w, "error getting user meta", http.StatusInternalServerError)
+		http.Redirect(w, r, routes.Map[routes.Login], http.StatusSeeOther)
 		return
 	}
 

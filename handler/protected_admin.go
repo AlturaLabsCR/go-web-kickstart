@@ -112,6 +112,12 @@ func (h *Handler) ProtectedDeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := h.Sess().RevokeByUser(ctx, idToDelete); err != nil {
+		h.Log().Error("error revoking session", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	if err := h.DB().Querier().DelUser(ctx, idToDelete); err != nil {
 		h.Log().Error("error deleting user", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
