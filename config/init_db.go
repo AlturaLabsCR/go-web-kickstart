@@ -30,7 +30,7 @@ func InitDB(ctx context.Context) (database.Database, error) {
 
 	switch driver {
 	case SqliteDriver:
-		return initSqlite(connStr)
+		return initSqlite(ctx, connStr)
 	case PostgresDriver:
 		return initPostgres(ctx, connStr)
 	}
@@ -38,8 +38,17 @@ func InitDB(ctx context.Context) (database.Database, error) {
 	return empty, fmt.Errorf("no available driver for: %s", connStr)
 }
 
-func initSqlite(connStr string) (*sqlite.Sqlite, error) {
-	return sqlite.NewSqlite(connStr, sqlite.WithCache(cache.NewMemoryStore()))
+func initSqlite(ctx context.Context, connStr string) (*sqlite.Sqlite, error) {
+	db, err := sqlite.NewSqlite(connStr, sqlite.WithCache(cache.NewMemoryStore()))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := db.Exec(ctx, "PRAGMA foreign_keys = ON;"); err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }
 
 func initPostgres(ctx context.Context, connStr string) (*postgres.Postgres, error) {
