@@ -8,7 +8,7 @@ import (
 )
 
 templ protectedAdmin(tr func(string) string, params ProtectedParams) {
-	<h1>Manage users</h1>
+	<h1>{ tr("protected.manage_users") }</h1>
 	<p>templates/protected/protected.templ</p>
 	@ProtectedAllUsers(tr, params.AllUsers, params.User.ID)
 }
@@ -32,7 +32,7 @@ templ ProtectedAllUsers(tr func(string) string, allUsers []models.UserMeta, curr
 							}
 						</td>
 						<td>
-							<span>{ strings.Join(u.Perms, ", ") }</span>
+							<span>{ strings.Join(permissions(tr, u.Perms), ", ") }</span>
 						</td>
 						<td>
 							if u.ID == currentUserID {

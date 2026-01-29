@@ -29,6 +29,14 @@ templ ProtectedUser(tr func(string) string, params ProtectedParams) {
 			}
 		}
 		<div><strong>{ tr("device") }</strong>: { params.Data.Agent }</div>
-		<div><strong>{ tr("permissions") }</strong>: { strings.Join(params.User.Perms, ", ") }</div>
+		<div><strong>{ tr("permissions") }</strong>: { strings.Join(permissions(tr, params.User.Perms), ", ") }</div>
 	</div>
+}
+
+func permissions(tr func(string) string, perms []string) []string {
+	names := []string{}
+	for _, perm := range perms {
+		names = append(names, tr(perm))
+	}
+	return names
 }

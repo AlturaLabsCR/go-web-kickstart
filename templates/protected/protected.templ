@@ -33,7 +33,7 @@ templ ProtectedMain(tr func(string) string, params ProtectedParams) {
 }
 
 templ protected(tr func(string) string) {
-	<h1>Protected view</h1>
+	<h1>{ tr("protected.title") }</h1>
 	<p>templates/protected/protected.templ</p>
 }
 
