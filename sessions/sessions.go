@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"app/cache"
@@ -198,6 +199,7 @@ func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
+	// Clear cookies
 	http.SetCookie(w, &http.Cookie{
 		Name:     s.params.CookiePrefix + AccessTokenKey,
 		Path:     s.params.CookiePath,
@@ -218,11 +220,44 @@ func (s *Store[T]) Revoke(w http.ResponseWriter, r *http.Request) error {
 		Secure:   s.params.SecureCookie,
 	})
 
-	if err := s.params.L2Cache.Del(r.Context(), s.params.NamespacePrefix+claims.SessionID); err != nil {
+	return s.revokeBySessionID(r.Context(), claims.SessionID)
+}
+
+func (s *Store[T]) RevokeByUser(ctx context.Context, sessionUser string) error {
+	elems, err := s.params.Cache.GetAll(ctx)
+	if err != nil {
 		return err
 	}
 
-	return s.params.Cache.Del(r.Context(), s.params.NamespacePrefix+claims.SessionID)
+	for key, value := range elems {
+		if !strings.HasPrefix(key, s.params.NamespacePrefix) {
+			continue
+		}
+
+		session, err := stringToSession(value)
+		if err != nil {
+			continue
+		}
+
+		if session.SessionUser == sessionUser {
+			sessionID := strings.TrimPrefix(key, s.params.NamespacePrefix)
+			if err := s.revokeBySessionID(ctx, sessionID); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *Store[T]) revokeBySessionID(ctx context.Context, sessionID string) error {
+	key := s.params.NamespacePrefix + sessionID
+
+	if err := s.params.L2Cache.Del(ctx, key); err != nil {
+		return err
+	}
+
+	return s.params.Cache.Del(ctx, key)
 }
 
 func (s *Store[T]) Attrs(ctx context.Context) (*Session, bool) {
