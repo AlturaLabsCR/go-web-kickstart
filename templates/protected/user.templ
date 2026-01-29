@@ -28,8 +28,33 @@ templ ProtectedUser(tr func(string) string, params ProtectedParams) {
 				@utils.BtnPost("onboarding-submit", routes.Map[routes.ProtectedUser], tr("onboarding.input.name.submit"))
 			}
 		}
-		<div><strong>{ tr("device") }</strong>: { params.Data.Agent }</div>
-		<div><strong>{ tr("permissions") }</strong>: { strings.Join(permissions(tr, params.User.Perms), ", ") }</div>
+		<div>
+			<strong>{ tr("device") }</strong>:
+			{ params.Data.Agent }
+		</div>
+		<div>
+			<strong>{ tr("permissions") }</strong>:
+			{ strings.Join(permissions(tr, params.User.Perms), ", ") }
+		</div>
+		<h1>{ tr("devices") }</h1>
+		<div>
+			<table>
+				<thead>
+					<tr>
+						<th>{ tr("device") }</th>
+						<th>{ tr("last_used") }</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, s := range params.Sessions {
+						<tr>
+							<td>{ s.Data.Agent }</td>
+							<td>{ s.Attrs.LastUsedAt }</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
 	</div>
 }
 

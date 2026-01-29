@@ -11,17 +11,25 @@ import (
 )
 
 type ProtectedParams struct {
-	User   *models.UserMeta
-	Attrs  *sessions.Session
-	Data   *config.SessionData
+	User  *models.UserMeta
+	Attrs *sessions.Session
+	Data  *config.SessionData
+
+	Sessions []UserSession
+
 	Active string
 
 	// Admin params
 	AllUsers []models.UserMeta
 }
 
+type UserSession struct {
+	Attrs *sessions.Session
+	Data  config.SessionData
+}
+
 templ ProtectedMain(tr func(string) string, params ProtectedParams) {
-	<p>{ tr("session.last_used") }: { time.Unix(params.Attrs.LastUsedAt, 0).Format(time.RFC3339) }</p>
+	<p>{ tr("last_used") }: { time.Unix(params.Attrs.LastUsedAt, 0).Format(time.RFC3339) }</p>
 	switch params.Active {
 		case routes.Map[routes.Protected]:
 			@protected(tr)
