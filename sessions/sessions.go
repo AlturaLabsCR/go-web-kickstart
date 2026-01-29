@@ -250,16 +250,6 @@ func (s *Store[T]) RevokeByUser(ctx context.Context, sessionUser string) error {
 	return nil
 }
 
-func (s *Store[T]) revokeBySessionID(ctx context.Context, sessionID string) error {
-	key := s.params.NamespacePrefix + sessionID
-
-	if err := s.params.L2Cache.Del(ctx, key); err != nil {
-		return err
-	}
-
-	return s.params.Cache.Del(ctx, key)
-}
-
 func (s *Store[T]) Attrs(ctx context.Context) (*Session, bool) {
 	v, ok := ctx.Value(SessionAttrsCtxKey).(*Session)
 	return v, ok
@@ -268,4 +258,30 @@ func (s *Store[T]) Attrs(ctx context.Context) (*Session, bool) {
 func (s *Store[T]) Data(ctx context.Context) (*T, bool) {
 	v, ok := ctx.Value(SessionDataCtxKey).(*T)
 	return v, ok
+}
+
+func (s *Store[T]) AttrsByUser(ctx context.Context, sessionUser string) ([]*Session, error) {
+	elems, err := s.params.Cache.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var sessions []*Session
+
+	for key, value := range elems {
+		if !strings.HasPrefix(key, s.params.NamespacePrefix) {
+			continue
+		}
+
+		session, err := stringToSession(value)
+		if err != nil {
+			continue
+		}
+
+		if session.SessionUser == sessionUser {
+			sessions = append(sessions, session)
+		}
+	}
+
+	return sessions, nil
 }

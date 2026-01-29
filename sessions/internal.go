@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -103,4 +104,14 @@ func stringToSession(sessionStr string) (*Session, error) {
 		return nil, err
 	}
 	return &s, nil
+}
+
+func (s *Store[T]) revokeBySessionID(ctx context.Context, sessionID string) error {
+	key := s.params.NamespacePrefix + sessionID
+
+	if err := s.params.L2Cache.Del(ctx, key); err != nil {
+		return err
+	}
+
+	return s.params.Cache.Del(ctx, key)
 }
