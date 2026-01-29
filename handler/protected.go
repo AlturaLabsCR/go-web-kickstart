@@ -5,6 +5,7 @@ import (
 
 	"app/config/routes"
 	"app/database/models"
+	"app/i18n"
 	"app/templates/base"
 	"app/templates/protected"
 )
@@ -35,11 +36,27 @@ func (h *Handler) ProtectedPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sessions, err := h.Sess().AttrsByUser(ctx, sessionData.UserID)
+	if err != nil {
+		h.Log().Error("error getting sessions attrs", "error", err)
+		http.Error(w, "error getting session attrs", http.StatusInternalServerError)
+		return
+	}
+
+	locale := "es"
+
+	langs := i18n.RequestLanguages(r)
+	if len(langs) > 0 && langs[0].Tag != "" {
+		locale = langs[0].Tag
+	}
+
 	main := protected.ProtectedMain(tr, protected.ProtectedParams{
-		User:   userMeta,
-		Attrs:  sessionAttrs,
-		Data:   sessionData,
-		Active: r.URL.Path,
+		User:     userMeta,
+		Attrs:    sessionAttrs,
+		Data:     sessionData,
+		Sessions: sessions,
+		Active:   r.URL.Path,
+		Locale:   locale,
 	})
 
 	head := base.HeadParams{

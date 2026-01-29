@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"app/database/models"
+	"app/i18n"
 	"app/templates/protected"
 )
 
@@ -70,10 +71,27 @@ func (h *Handler) ProtectedUpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userSessions, err := h.Sess().AttrsByUser(ctx, sessionData.UserID)
+	if err != nil {
+		h.Log().Error("error getting sessions attrs", "error", err)
+		http.Error(w, "error getting session attrs", http.StatusInternalServerError)
+		return
+	}
+
+	locale := "es"
+
+	langs := i18n.RequestLanguages(r)
+	if len(langs) > 0 && langs[0].Tag != "" {
+		locale = langs[0].Tag
+	}
+
 	params := protected.ProtectedParams{
-		User:  userMeta,
-		Attrs: sessionAttrs,
-		Data:  sessionData,
+		User:     userMeta,
+		Attrs:    sessionAttrs,
+		Data:     sessionData,
+		Sessions: userSessions,
+		Active:   r.URL.Path,
+		Locale:   locale,
 	}
 
 	if err := protected.ProtectedUser(tr, params).Render(ctx, w); err != nil {
