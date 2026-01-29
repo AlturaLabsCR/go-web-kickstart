@@ -16,7 +16,6 @@ var ES = map[string]string{
 	"protected.manage_users": "Gestionar usuarios",
 	"user.name":              "Nombre",
 	"user.perms":             "Permisos",
-	"session.last_used":      "Última actividad",
 
 	"protected.logout": "Salir",
 
@@ -26,5 +25,7 @@ var ES = map[string]string{
 
 	"welcome":     "Hola",
 	"device":      "Dispositivo",
+	"devices":     "Dispositivos",
+	"last_used":   "Última actividad",
 	"permissions": "Permisos",
 }
