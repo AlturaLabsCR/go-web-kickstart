@@ -15,17 +15,13 @@ type ProtectedParams struct {
 	Attrs *sessions.Session
 	Data  *config.SessionData
 
-	Sessions []UserSession
+	Sessions []*sessions.Session
+	Locale   string
 
 	Active string
 
 	// Admin params
 	AllUsers []models.UserMeta
-}
-
-type UserSession struct {
-	Attrs *sessions.Session
-	Data  config.SessionData
 }
 
 templ ProtectedMain(tr func(string) string, params ProtectedParams) {
